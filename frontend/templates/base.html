@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ page_title }} | Exam Proctoring System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header class="site-header">
+        <div class="brand-block">
+            <div class="brand-title">ExamGuard AI</div>
+            <div class="brand-subtitle">Offline proctoring and cheating detection</div>
+        </div>
+        <nav class="nav-bar" aria-label="Primary navigation">
+            <a href="{{ url_for('auth.login') }}">Login</a>
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('reports') }}">Reports</a>
+            <a href="{{ url_for('about') }}">About</a>
+            <a href="{{ url_for('settings') }}">Settings</a>
+        </nav>
+    </header>
+
+    <main class="page-shell">
+        <section class="hero-card">
+            <p class="eyebrow">{{ page_title }}</p>
+            <h1>{{ heading }}</h1>
+            <p class="message">{{ message }}</p>
+        </section>
+    </main>
+</body>
+</html>

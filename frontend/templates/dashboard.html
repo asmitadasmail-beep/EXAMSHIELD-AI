@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ page_title }} | Exam Proctoring System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="dashboard-page">
+    <header class="site-header">
+        <div class="brand-block">
+            <div class="brand-title">ExamGuard AI</div>
+            <div class="brand-subtitle">Offline proctoring and cheating detection</div>
+        </div>
+        <nav class="nav-bar" aria-label="Primary navigation">
+            <a href="{{ url_for('auth.login') }}">Login</a>
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('reports') }}">Reports</a>
+            <a href="{{ url_for('about') }}">About</a>
+            <a href="{{ url_for('settings') }}">Settings</a>
+        </nav>
+    </header>
+
+    <main class="dashboard-shell">
+        <section class="dashboard-grid">
+            <article class="dashboard-card student-card">
+                <p class="card-kicker">Student Info</p>
+                <h1>{{ student_info.student_name }}</h1>
+                <dl class="student-details">
+                    <div>
+                        <dt>Student ID</dt>
+                        <dd>{{ student_info.student_id }}</dd>
+                    </div>
+                    <div>
+                        <dt>USN</dt>
+                        <dd>{{ student_info.student_usn }}</dd>
+                    </div>
+                    <div>
+                        <dt>Subject</dt>
+                        <dd>{{ student_info.student_subject }}</dd>
+                    </div>
+                    <div>
+                        <dt>Exam Code</dt>
+                        <dd>{{ student_info.student_exam_code }}</dd>
+                    </div>
+                </dl>
+            </article>
+
+            <article class="dashboard-card timer-card">
+                <p class="card-kicker">Exam Timer</p>
+                <div class="timer-display" id="examTimer" data-running="false">00:00:00</div>
+                <p class="message">The timer starts in the browser when the exam begins.</p>
+            </article>
+
+            <article class="dashboard-card status-card">
+                <p class="card-kicker">Live Status</p>
+                <div class="status-row">
+                    <span>Camera Status</span>
+                    <span class="status-badge status-neutral">{{ camera_status }}</span>
+                </div>
+                <div class="status-row">
+                    <span>AI Status</span>
+                    <span class="status-badge status-neutral" id="aiStatusBadge">{{ ai_status }}</span>
+                </div>
+                <div class="camera-feed-shell">
+                    <img id="cameraStream" class="camera-stream" alt="Live camera stream" hidden>
+                </div>
+            </article>
+
+            <article class="dashboard-card warning-card">
+                <p class="card-kicker">Warnings Counter</p>
+                <div class="warning-count" id="warningCount">{{ warnings_count }}</div>
+                <p class="message">This value will later increase from AI incident detection.</p>
+            </article>
+
+            <article class="dashboard-card action-card">
+                <p class="card-kicker">Exam Controls</p>
+                <div class="action-row">
+                    <button type="button" class="primary-button" id="startExamButton">Start Exam</button>
+                    <button type="button" class="secondary-button" id="stopExamButton" disabled>Stop Exam</button>
+                    <button type="button" class="secondary-button" id="generateReportButton" disabled>Generate Report</button>
+                    <button type="button" class="secondary-button" id="downloadReportButton" disabled>Download Report</button>
+                </div>
+                <p class="message" id="examStateMessage">Exam is ready to start.</p>
+            </article>
+        </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>

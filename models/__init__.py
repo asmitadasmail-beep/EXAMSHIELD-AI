@@ -1,0 +1,1 @@
+"""Model assets and metadata for the exam proctoring project."""

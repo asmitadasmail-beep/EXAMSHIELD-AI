@@ -1,0 +1,7 @@
+flask
+opencv-python
+mediapipe
+ultralytics
+pandas
+fpdf2
+python-dotenv
