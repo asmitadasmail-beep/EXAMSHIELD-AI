@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ page_title }} | ExamShield AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header class="site-header">
+        <div class="brand-block">
+            <div class="brand-title">ExamShield AI</div>
+            <div class="brand-subtitle">Offline AI Proctoring & Cheating Detection</div>
+        </div>
+        <nav class="nav-bar" aria-label="Primary navigation">
+            <a href="{{ url_for('auth.login') }}">Login</a>
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('reports.reports_page') }}">Reports</a>
+            <a href="{{ url_for('about') }}" class="nav-active">About</a>
+            <a href="{{ url_for('settings.settings_page') }}">Settings</a>
+        </nav>
+    </header>
+
+    <main class="about-shell">
+        <section class="about-hero">
+            <p class="eyebrow">About the project</p>
+            <h1>ExamShield AI</h1>
+            <p class="message">An offline-first exam proctoring system that combines camera analysis, incident logging, risk scoring, and reviewable reports.</p>
+        </section>
+        <section class="about-grid">
+            <article class="about-section">
+                <h2>What it does</h2>
+                <p>ExamShield watches the exam camera for face presence, head orientation, multiple people, and mobile phones. Incidents are recorded once per discrete event and summarized when the session ends.</p>
+            </article>
+            <article class="about-section">
+                <h2>Technology stack</h2>
+                <ul class="tech-list">
+                    <li>Python and Flask</li>
+                    <li>OpenCV and MediaPipe</li>
+                    <li>Ultralytics YOLO</li>
+                    <li>SQLite and pandas</li>
+                    <li>fpdf2 for PDF reports</li>
+                </ul>
+            </article>
+        </section>
+    </main>
+</body>
+</html>

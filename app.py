@@ -2,10 +2,11 @@ import os
 
 from flask import Flask, render_template, session
 
-from ai_modules.webcam import get_camera_status_label
 import config
 from backend.routes.auth_routes import auth_bp
 from backend.routes.exam_routes import exam_bp
+from backend.routes.report_routes import report_bp
+from backend.routes.settings_routes import settings_bp
 
 
 app = Flask(
@@ -17,6 +18,8 @@ app.secret_key = os.getenv("SECRET_KEY", "dev-secret-key-change-me")
 app.config.from_object(config)
 app.register_blueprint(auth_bp)
 app.register_blueprint(exam_bp)
+app.register_blueprint(report_bp)
+app.register_blueprint(settings_bp)
 
 
 def render_placeholder(title: str, message: str):
@@ -50,24 +53,14 @@ def dashboard():
         page_title="Dashboard",
         student_info=student_info,
         warnings_count=session.get("warnings_count", 0),
-        camera_status=get_camera_status_label(),
+        camera_status="Camera Off",
         ai_status="Monitoring",
     )
 
 
-@app.route("/reports")
-def reports():
-    return render_placeholder("Reports", "Coming soon")
-
-
 @app.route("/about")
 def about():
-    return render_placeholder("About", "Coming soon")
-
-
-@app.route("/settings")
-def settings():
-    return render_placeholder("Settings", "Coming soon")
+    return render_template("about.html", page_title="About")
 
 
 if __name__ == "__main__":

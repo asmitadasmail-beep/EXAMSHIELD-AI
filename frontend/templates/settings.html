@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ page_title }} | ExamShield AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header class="site-header">
+        <div class="brand-block">
+            <div class="brand-title">ExamShield AI</div>
+            <div class="brand-subtitle">Offline AI Proctoring & Cheating Detection</div>
+        </div>
+        <nav class="nav-bar" aria-label="Primary navigation">
+            <a href="{{ url_for('auth.login') }}">Login</a>
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('reports.reports_page') }}">Reports</a>
+            <a href="{{ url_for('about') }}">About</a>
+            <a href="{{ url_for('settings.settings_page') }}" class="nav-active">Settings</a>
+        </nav>
+    </header>
+
+    <main class="settings-shell">
+        <section class="settings-header">
+            <p class="eyebrow">Runtime controls</p>
+            <h1>Proctoring Settings</h1>
+            <p class="message">Saved values apply dynamically to ongoing and future exam sessions.</p>
+        </section>
+        {% if saved %}<p class="form-success">Settings saved successfully.</p>{% endif %}
+        {% if error %}<p class="form-error">{{ error }}</p>{% endif %}
+        <form class="settings-form" method="post">
+            <section class="settings-section">
+                <h2>Detection thresholds & confirmation</h2>
+                <div class="settings-grid">
+                    <label><span>Face missing confirmation (seconds)</span><input type="number" name="FACE_MISSING_SEC" min="0.5" step="0.5" value="{{ settings.FACE_MISSING_SEC }}" required></label>
+                    <label><span>Looking-away confirmation (seconds)</span><input type="number" name="LOOKING_AWAY_SEC" min="0.5" step="0.5" value="{{ settings.LOOKING_AWAY_SEC }}" required></label>
+                    <label><span>Looking-away Yaw angle / left-right (degrees)</span><input type="number" name="LOOKING_AWAY_ANGLE_DEG" min="5" max="80" step="1" value="{{ settings.LOOKING_AWAY_ANGLE_DEG }}" required></label>
+                    <label><span>Looking-away Pitch angle / up-down (degrees)</span><input type="number" name="LOOKING_AWAY_PITCH_DEG" min="5" max="80" step="1" value="{{ settings.LOOKING_AWAY_PITCH_DEG }}" required></label>
+                    <label><span>Calibration duration (seconds)</span><input type="number" name="CALIBRATION_DURATION_SEC" min="1" max="10" step="0.5" value="{{ settings.CALIBRATION_DURATION_SEC }}" required></label>
+                    <label><span>Horizontal gaze deviation (degrees)</span><input type="number" name="GAZE_YAW_THRESHOLD_DEG" min="5" max="80" step="1" value="{{ settings.GAZE_YAW_THRESHOLD_DEG }}" required></label>
+                    <label><span>Vertical gaze deviation (degrees)</span><input type="number" name="GAZE_PITCH_THRESHOLD_DEG" min="5" max="80" step="1" value="{{ settings.GAZE_PITCH_THRESHOLD_DEG }}" required></label>
+                    <label><span>Pose smoothing factor (0.1 - 1.0)</span><input type="number" name="POSE_SMOOTHING_FACTOR" min="0.1" max="1" step="0.05" value="{{ settings.POSE_SMOOTHING_FACTOR }}" required></label>
+                    <label><span>Phone confirmation cycles (frames)</span><input type="number" name="PHONE_CONFIRM_FRAMES" min="1" max="10" step="1" value="{{ settings.PHONE_CONFIRM_FRAMES }}" required></label>
+                    <label><span>Multiple-person confirmation cycles (frames)</span><input type="number" name="MULTI_PERSON_CONFIRM_FRAMES" min="1" max="10" step="1" value="{{ settings.MULTI_PERSON_CONFIRM_FRAMES }}" required></label>
+                    <label><span>YOLO confidence threshold (0.1 - 1.0)</span><input type="number" name="YOLO_CONFIDENCE" min="0.1" max="1" step="0.05" value="{{ settings.YOLO_CONFIDENCE }}" required></label>
+                </div>
+            </section>
+            <section class="settings-section">
+                <h2>Risk weights per irregularity event</h2>
+                <div class="settings-grid">
+                    <label><span>Face missing weight</span><input type="number" name="RISK_FACE_MISSING" min="0" max="100" step="1" value="{{ settings.RISK_WEIGHTS.FACE_MISSING }}" required></label>
+                    <label><span>Looking away weight</span><input type="number" name="RISK_LOOKING_AWAY" min="0" max="100" step="1" value="{{ settings.RISK_WEIGHTS.LOOKING_AWAY }}" required></label>
+                    <label><span>Multiple person weight</span><input type="number" name="RISK_MULTIPLE_PERSON" min="0" max="100" step="1" value="{{ settings.RISK_WEIGHTS.MULTIPLE_PERSON }}" required></label>
+                    <label><span>Phone detected weight</span><input type="number" name="RISK_PHONE_DETECTED" min="0" max="100" step="1" value="{{ settings.RISK_WEIGHTS.PHONE_DETECTED }}" required></label>
+                </div>
+            </section>
+            <button type="submit" class="primary-button">Save Settings</button>
+        </form>
+    </main>
+</body>
+</html>
