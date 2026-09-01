@@ -3,28 +3,35 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ page_title }} | Exam Proctoring System</title>
+    <title>{{ page_title }} | ExamShield AI</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body class="dashboard-page">
     <header class="site-header">
         <div class="brand-block">
-            <div class="brand-title">ExamGuard AI</div>
-            <div class="brand-subtitle">Offline proctoring and cheating detection</div>
+            <div class="brand-title">ExamShield AI</div>
+            <div class="brand-subtitle">Offline AI Proctoring & Cheating Detection</div>
         </div>
         <nav class="nav-bar" aria-label="Primary navigation">
             <a href="{{ url_for('auth.login') }}">Login</a>
-            <a href="{{ url_for('dashboard') }}">Dashboard</a>
-            <a href="{{ url_for('reports') }}">Reports</a>
+            <a href="{{ url_for('dashboard') }}" class="nav-active">Dashboard</a>
+            <a href="{{ url_for('reports.reports_page') }}">Reports</a>
             <a href="{{ url_for('about') }}">About</a>
-            <a href="{{ url_for('settings') }}">Settings</a>
+            <a href="{{ url_for('settings.settings_page') }}">Settings</a>
         </nav>
     </header>
 
     <main class="dashboard-shell">
+        <!-- Live Warning Alert Banner -->
+        <div id="liveAlertBanner" class="alert-banner alert-hidden" role="alert">
+            <span class="alert-icon">⚠</span>
+            <span id="alertMessage" class="alert-text">Violation detected</span>
+        </div>
+
         <section class="dashboard-grid">
+            <!-- Student Information -->
             <article class="dashboard-card student-card">
-                <p class="card-kicker">Student Info</p>
+                <p class="card-kicker">Candidate Session</p>
                 <h1>{{ student_info.student_name }}</h1>
                 <dl class="student-details">
                     <div>
@@ -46,35 +53,10 @@
                 </dl>
             </article>
 
+            <!-- Timer & Controls -->
             <article class="dashboard-card timer-card">
                 <p class="card-kicker">Exam Timer</p>
                 <div class="timer-display" id="examTimer" data-running="false">00:00:00</div>
-                <p class="message">The timer starts in the browser when the exam begins.</p>
-            </article>
-
-            <article class="dashboard-card status-card">
-                <p class="card-kicker">Live Status</p>
-                <div class="status-row">
-                    <span>Camera Status</span>
-                    <span class="status-badge status-neutral">{{ camera_status }}</span>
-                </div>
-                <div class="status-row">
-                    <span>AI Status</span>
-                    <span class="status-badge status-neutral" id="aiStatusBadge">{{ ai_status }}</span>
-                </div>
-                <div class="camera-feed-shell">
-                    <img id="cameraStream" class="camera-stream" alt="Live camera stream" hidden>
-                </div>
-            </article>
-
-            <article class="dashboard-card warning-card">
-                <p class="card-kicker">Warnings Counter</p>
-                <div class="warning-count" id="warningCount">{{ warnings_count }}</div>
-                <p class="message">This value will later increase from AI incident detection.</p>
-            </article>
-
-            <article class="dashboard-card action-card">
-                <p class="card-kicker">Exam Controls</p>
                 <div class="action-row">
                     <button type="button" class="primary-button" id="startExamButton">Start Exam</button>
                     <button type="button" class="secondary-button" id="stopExamButton" disabled>Stop Exam</button>
@@ -82,6 +64,84 @@
                     <button type="button" class="secondary-button" id="downloadReportButton" disabled>Download Report</button>
                 </div>
                 <p class="message" id="examStateMessage">Exam is ready to start.</p>
+            </article>
+
+            <!-- Warnings Counter -->
+            <article class="dashboard-card warning-card">
+                <p class="card-kicker">Warnings Counter</p>
+                <div class="warning-count" id="warningCount">{{ warnings_count }}</div>
+                <p class="message" id="warningDetailMessage">Incidents are logged when a confirmed anomaly occurs.</p>
+            </article>
+
+            <!-- Live Camera Feed -->
+            <article class="dashboard-card camera-card">
+                <div class="card-header-row">
+                    <p class="card-kicker">Live Camera Stream</p>
+                    <div style="display:flex; align-items:center; gap:0.65rem;">
+                        <span class="live-indicator"><span class="live-dot"></span>LIVE</span>
+                        <span class="status-badge status-neutral" id="cameraStatusBadge">{{ camera_status }}</span>
+                    </div>
+                </div>
+                <div class="camera-feed-shell">
+                    <img id="cameraStream" class="camera-stream" alt="Live camera stream" hidden>
+                    <div id="cameraPlaceholder" class="camera-placeholder">
+                        <div class="placeholder-icon">📹</div>
+                        <p>Camera is currently inactive. Click <strong>Start Exam</strong> to begin.</p>
+                    </div>
+                </div>
+            </article>
+
+            <!-- Live Proctoring Status Checklist -->
+            <article class="dashboard-card checklist-card">
+                <div class="card-header-row">
+                    <p class="card-kicker">Live Proctoring Status</p>
+                    <span class="status-badge status-neutral" id="aiStatusBadge">{{ ai_status }}</span>
+                </div>
+                <ul class="proctor-checklist" id="proctorChecklist">
+                    <li class="check-item" id="checkFace">
+                        <span class="check-icon">✓</span>
+                        <span class="check-label">Face Presence:</span>
+                        <span class="check-value" id="valFace">Monitoring...</span>
+                    </li>
+                    <li class="check-item" id="checkPose">
+                        <span class="check-icon">✓</span>
+                        <span class="check-label">Gaze / Head Pose:</span>
+                        <span class="check-value" id="valPose">Monitoring...</span>
+                    </li>
+                    <li class="check-item" id="checkPerson">
+                        <span class="check-icon">✓</span>
+                        <span class="check-label">Room Occupancy:</span>
+                        <span class="check-value" id="valPerson">Single Candidate</span>
+                    </li>
+                    <li class="check-item" id="checkPhone">
+                        <span class="check-icon">✓</span>
+                        <span class="check-label">Prohibited Devices:</span>
+                        <span class="check-value" id="valPhone">No Phone Detected</span>
+                    </li>
+                </ul>
+            </article>
+
+            <!-- Subsystems Health Grid -->
+            <article class="dashboard-card subsystems-card">
+                <p class="card-kicker">AI Subsystem Diagnostics</p>
+                <div class="subsystems-grid">
+                    <div class="subsystem-item">
+                        <span class="subsystem-name">Camera Device</span>
+                        <span class="subsystem-val status-badge-small" id="sysCamera">Checking...</span>
+                    </div>
+                    <div class="subsystem-item">
+                        <span class="subsystem-name">Face Detector</span>
+                        <span class="subsystem-val status-badge-small" id="sysFace">MediaPipe Tasks</span>
+                    </div>
+                    <div class="subsystem-item">
+                        <span class="subsystem-name">Head Pose / Mesh</span>
+                        <span class="subsystem-val status-badge-small" id="sysPose">MediaPipe Tasks</span>
+                    </div>
+                    <div class="subsystem-item">
+                        <span class="subsystem-name">YOLOv8 Object AI</span>
+                        <span class="subsystem-val status-badge-small" id="sysYolo">Active (YOLOv8n)</span>
+                    </div>
+                </div>
             </article>
         </section>
     </main>

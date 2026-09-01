@@ -1,3 +1,5 @@
+import logging
+
 from flask import Blueprint, redirect, render_template, request, session, url_for
 
 from backend.database.db_manager import DatabaseManager
@@ -5,6 +7,7 @@ from backend.database.db_manager import DatabaseManager
 
 auth_bp = Blueprint("auth", __name__)
 db_manager = DatabaseManager()
+logger = logging.getLogger(__name__)
 
 
 def _clean_form_value(key: str) -> str:
@@ -29,13 +32,22 @@ def login():
                 form_data=form_data,
             )
 
-        db_manager.init_db()
-        student_id = db_manager.add_student(
-            form_data["name"],
-            form_data["usn"],
-            form_data["subject"],
-            form_data["exam_code"],
-        )
+        try:
+            db_manager.init_db()
+            student_id = db_manager.add_student(
+                form_data["name"],
+                form_data["usn"],
+                form_data["subject"],
+                form_data["exam_code"],
+            )
+        except Exception:
+            logger.exception("Login database operation failed")
+            return render_template(
+                "login.html",
+                page_title="Login",
+                error="The database is unavailable. Please try again.",
+                form_data=form_data,
+            )
 
         session["student_id"] = student_id
         session["student_name"] = form_data["name"]

@@ -96,6 +96,18 @@ class FaceDetector:
     def get_backend(self) -> str:
         return self._backend
 
+    def is_available(self) -> bool:
+        return self._backend != "none"
+
+    def get_status(self) -> str:
+        if self._backend == "mediapipe_tasks":
+            return "Active (MediaPipe Tasks)"
+        elif self._backend == "mediapipe_solutions":
+            return "Active (MediaPipe Solutions)"
+        elif self._backend == "opencv":
+            return "Active (OpenCV Haar Cascade Fallback)"
+        return "Unavailable"
+
     def _find_task_model(self) -> Optional[Path]:
         env_path = os.getenv("MEDIAPIPE_FACE_DETECTOR_MODEL")
         if env_path:

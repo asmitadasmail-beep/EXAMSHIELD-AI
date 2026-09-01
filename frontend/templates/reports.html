@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ page_title }} | ExamShield AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header class="site-header">
+        <div class="brand-block">
+            <div class="brand-title">ExamShield AI</div>
+            <div class="brand-subtitle">Offline AI Proctoring & Cheating Detection</div>
+        </div>
+        <nav class="nav-bar" aria-label="Primary navigation">
+            <a href="{{ url_for('auth.login') }}">Login</a>
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('reports.reports_page') }}" class="nav-active">Reports</a>
+            <a href="{{ url_for('about') }}">About</a>
+            <a href="{{ url_for('settings.settings_page') }}">Settings</a>
+        </nav>
+    </header>
+
+    <main class="reports-shell">
+        <section class="reports-header">
+            <p class="eyebrow">Session archive</p>
+            <h1>Exam Reports</h1>
+            <p class="message">Review completed proctoring sessions and download their reports.</p>
+        </section>
+
+        <section class="reports-table-shell" aria-label="Exam sessions">
+            {% if error %}<p class="form-error">{{ error }}</p>{% endif %}
+            {% if sessions %}
+            <div class="table-scroll">
+                <table class="reports-table">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>USN</th>
+                            <th>Subject</th>
+                            <th>Date</th>
+                            <th>Duration</th>
+                            <th>Risk Score</th>
+                            <th>Reports</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for report in sessions %}
+                        <tr>
+                            <td>{{ report.name }}</td>
+                            <td>{{ report.usn }}</td>
+                            <td>{{ report.subject }}</td>
+                            <td>{{ report.start_time[:10] if report.start_time else '-' }}</td>
+                            <td>{{ report.duration_seconds or 0 }} sec</td>
+                            <td>
+                                {% set category = report.risk_category or 'Low' %}
+                                <span class="risk-badge risk-{{ category|lower }}">
+                                    {{ report.risk_score or 0 }} · {{ category }}
+                                </span>
+                            </td>
+                            <td class="report-links">
+                                <a href="{{ url_for('reports.download_report', session_id=report.session_id) }}">PDF</a>
+                                <a href="{{ url_for('exam.download_report', session_id=report.session_id) }}">CSV</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="empty-state">No exam sessions have been completed yet.</p>
+            {% endif %}
+        </section>
+    </main>
+</body>
+</html>
