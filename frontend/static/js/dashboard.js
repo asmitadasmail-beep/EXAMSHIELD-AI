@@ -344,6 +344,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     stopButton.addEventListener('click', async () => {
+        if (!window.confirm('End this examination session? Your monitoring report will be finalized.')) {
+            return;
+        }
         await stopTimer();
     });
 

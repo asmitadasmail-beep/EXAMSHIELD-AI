@@ -9,15 +9,17 @@
 <body>
     <header class="site-header">
         <div class="brand-block">
+            <div class="brand-mark" aria-hidden="true">E</div>
+            <div>
             <div class="brand-title">ExamShield AI</div>
-            <div class="brand-subtitle">Offline AI Proctoring & Cheating Detection</div>
+            <div class="brand-subtitle">Secure online examinations</div>
+            </div>
         </div>
         <nav class="nav-bar" aria-label="Primary navigation">
-            <a href="{{ url_for('auth.login') }}">Login</a>
             <a href="{{ url_for('dashboard') }}">Dashboard</a>
             <a href="{{ url_for('reports.reports_page') }}">Reports</a>
-            <a href="{{ url_for('about') }}">About</a>
             <a href="{{ url_for('settings.settings_page') }}">Settings</a>
+            <a href="{{ url_for('auth.login') }}">Login</a>
         </nav>
     </header>
 

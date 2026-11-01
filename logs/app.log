@@ -1,0 +1,10 @@
+2026-11-01 19:00:02,946 INFO examshield.incidents session_id=11 event_type=PHONE_DETECTED confidence=0.572 severity=HIGH details=Cell phone detected in the frame with confidence 0.57.
+2026-11-01 19:00:09,978 INFO examshield.incidents session_id=11 event_type=MULTIPLE_PERSON confidence=0.597 severity=HIGH details=Detected 2 persons in the camera frame.
+2026-11-01 19:00:10,667 INFO examshield.incidents session_id=11 event_type=PHONE_DETECTED confidence=0.838 severity=HIGH details=Cell phone detected in the frame with confidence 0.84.
+2026-11-01 19:00:24,730 INFO examshield.incidents session_id=11 event_type=FACE_MISSING confidence=1.000 severity=MEDIUM details=No face detected in camera for 5 seconds.
+2026-11-01 19:28:31,970 INFO examshield.incidents session_id=12 event_type=PHONE_DETECTED confidence=0.567 severity=HIGH details=Cell phone detected in the frame with confidence 0.57.
+2026-11-01 19:28:42,174 INFO examshield.incidents session_id=12 event_type=PHONE_DETECTED confidence=0.564 severity=HIGH details=Cell phone detected in the frame with confidence 0.56.
+2026-11-01 19:28:43,809 INFO examshield.incidents session_id=12 event_type=PHONE_DETECTED confidence=0.800 severity=HIGH details=Cell phone detected in the frame with confidence 0.80.
+2026-11-01 19:28:45,650 INFO examshield.incidents session_id=12 event_type=PHONE_DETECTED confidence=0.837 severity=HIGH details=Cell phone detected in the frame with confidence 0.84.
+2026-11-01 19:28:51,318 INFO examshield.incidents session_id=12 event_type=PHONE_DETECTED confidence=0.689 severity=HIGH details=Cell phone detected in the frame with confidence 0.69.
+2026-11-01 19:29:04,538 INFO examshield.incidents session_id=12 event_type=LOOKING_AWAY confidence=0.950 severity=MEDIUM details=Head deviation (LOOKING_DOWN): yaw=-1.1°, pitch=12.9° for 3 seconds.

@@ -7,6 +7,7 @@ from backend.routes.auth_routes import auth_bp
 from backend.routes.exam_routes import exam_bp
 from backend.routes.report_routes import report_bp
 from backend.routes.settings_routes import settings_bp
+from backend.routes.learning_routes import learning_bp
 
 
 app = Flask(
@@ -20,6 +21,7 @@ app.register_blueprint(auth_bp)
 app.register_blueprint(exam_bp)
 app.register_blueprint(report_bp)
 app.register_blueprint(settings_bp)
+app.register_blueprint(learning_bp)
 
 
 def render_placeholder(title: str, message: str):
@@ -33,10 +35,10 @@ def render_placeholder(title: str, message: str):
 
 @app.route("/")
 def index():
-    return render_placeholder(
-        "Home",
-        "Offline Flask scaffold for the AI-powered exam proctoring project.",
-    )
+    from backend.database.db_manager import DatabaseManager
+    database = DatabaseManager()
+    database.init_db()
+    return render_template("home.html", page_title="Practice smarter", subjects=database.list_subjects())
 
 
 @app.route("/dashboard")

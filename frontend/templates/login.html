@@ -9,10 +9,17 @@
 <body class="auth-page">
     <main class="auth-shell">
         <section class="auth-card">
-            <div class="auth-copy">
-                <p class="eyebrow">ExamShield AI</p>
-                <h1>Start your exam session</h1>
-                <p class="message">Enter the details exactly as provided by your college before launching the proctoring flow.</p>
+            <div class="auth-brand">
+                <div class="brand-block">
+                    <div class="brand-mark" aria-hidden="true">E</div>
+                    <div>
+                        <div class="brand-title">ExamShield AI</div>
+                        <div class="brand-subtitle">Secure online examinations</div>
+                    </div>
+                </div>
+                <p class="eyebrow">Student access</p>
+                <h1>Welcome back</h1>
+                <p class="message">Enter the exam details provided by your institution to continue.</p>
             </div>
 
             {% if error %}
@@ -40,8 +47,10 @@
                     <input type="text" name="exam_code" value="{{ form_data.exam_code }}" required>
                 </label>
 
-                <button type="submit" class="primary-button">Start Exam</button>
+                <button type="submit" class="primary-button">Continue to dashboard</button>
             </form>
+            <p class="message">Already registered? <a href="{{ url_for('auth.account_login') }}">Log in with email</a></p>
+            <p class="message">New to ExamShield AI? <a href="{{ url_for('auth.register') }}">Create a student account</a></p>
         </section>
     </main>
 </body>

@@ -1,0 +1,5 @@
+timestamp,event_type,confidence,severity,details
+2026-11-01 13:30:02,PHONE_DETECTED,0.5717287659645081,HIGH,Cell phone detected in the frame with confidence 0.57.
+2026-11-01 13:30:09,MULTIPLE_PERSON,0.5970512628555298,HIGH,Detected 2 persons in the camera frame.
+2026-11-01 13:30:10,PHONE_DETECTED,0.8375244736671448,HIGH,Cell phone detected in the frame with confidence 0.84.
+2026-11-01 13:30:24,FACE_MISSING,1.0,MEDIUM,No face detected in camera for 5 seconds.
