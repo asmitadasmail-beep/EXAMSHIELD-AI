@@ -72,6 +72,7 @@ class ProctorEngine:
             "person_count": 1,
         }
         self._running = False
+        self._external_mode = False
         self.latest_processed_frame: Optional[np.ndarray] = None
 
         # Warm up AI detectors in background thread immediately so start_exam is instantaneous
@@ -102,7 +103,7 @@ class ProctorEngine:
     def is_ai_ready(self) -> bool:
         return self._ai_ready
 
-    def start(self, session_id: int) -> None:
+    def start(self, session_id: int, use_camera: bool = True) -> None:
         with self.lock:
             if self._running:
                 return
@@ -133,6 +134,7 @@ class ProctorEngine:
             self._smoothed_yaw = None
             self._smoothed_pitch = None
             self._last_gaze_state = "CALIBRATING"
+            self._external_mode = not use_camera
             self.state.update(
                 {
                     "face_status": "present",
@@ -144,17 +146,19 @@ class ProctorEngine:
             self.stop_event.clear()
 
             # 1. Start camera immediately
-            self.webcam.start()
-            if not self.webcam.is_running():
-                logger.error("Webcam failed to start.")
-                self._running = False
-                return
+            if use_camera:
+                self.webcam.start()
+                if not self.webcam.is_running():
+                    logger.error("Webcam failed to start.")
+                    self._running = False
+                    return
 
             self._running = True
             self._calibration_started_at = time.monotonic()
             logger.info("ProctorEngine started for session %s.", session_id)
-            self.thread = threading.Thread(target=self._process_loop, daemon=True)
-            self.thread.start()
+            if use_camera:
+                self.thread = threading.Thread(target=self._process_loop, daemon=True)
+                self.thread.start()
 
     def _process_loop(self) -> None:
         while not self.stop_event.is_set() and self.webcam.is_running():
@@ -402,6 +406,13 @@ class ProctorEngine:
 
         return frame
 
+    def process_external_frame(self, frame: np.ndarray) -> None:
+        if not self.is_running() or not self._external_mode:
+            return
+        processed_frame = self.process_frame(frame)
+        with self.lock:
+            self.latest_processed_frame = processed_frame
+
     @staticmethod
     def _canonical_gaze_direction(direction: str) -> str:
         if direction in {"NORMAL", "LOOKING_AT_SCREEN"}:
@@ -501,6 +512,19 @@ class ProctorEngine:
             logger.exception("Failed to refresh warning count for session %s", self.session_id)
             self.warning_count = max(self.warning_count, 0)
 
+    def _get_recent_warnings(self) -> List[str]:
+        if self.session_id is None:
+            return []
+        try:
+            incidents = self.incident_logger.db_manager.get_session_incidents(self.session_id)
+            return [
+                f"{incident['event_type']}: {incident['details']}"
+                for incident in incidents[-5:]
+            ]
+        except Exception:
+            logger.exception("Failed to load recent warnings for session %s", self.session_id)
+            return []
+
     def _update_looking_away_incident(self, is_abnormal: bool, now: float, threshold_seconds: float) -> bool:
         """Return True only when a new confirmed looking-away incident is created."""
         if not is_abnormal:
@@ -577,12 +601,13 @@ class ProctorEngine:
 
         with self.lock:
             self._running = False
+            self._external_mode = False
             self.thread = None
             self.latest_processed_frame = None
             logger.info("ProctorEngine stopped.")
 
     def is_running(self) -> bool:
-        return self._running and self.webcam.is_running()
+        return self._running and (self._external_mode or self.webcam.is_running())
 
     def get_latest_frame_bytes(self) -> Optional[bytes]:
         with self.lock:
@@ -602,7 +627,7 @@ class ProctorEngine:
     def get_status(self) -> dict:
         with self.lock:
             running = self.is_running()
-            cam_stat = self.webcam.get_status()
+            cam_stat = "Browser Connected" if self._external_mode else self.webcam.get_status()
             camera_status = f"Camera {cam_stat}" if running else "Camera Off"
 
             face_status_label = self.face_detector.get_status() if self.face_detector else "Initializing..."
@@ -640,6 +665,7 @@ class ProctorEngine:
                 ai_status = "Fully Operational"
 
             active_alerts = self._get_active_alerts_list()
+            recent_warnings = self._get_recent_warnings()
             if self.session_id is not None:
                 self._refresh_warning_count()
             warning_count = self.warning_count if self.session_id is not None else 0
@@ -662,6 +688,7 @@ class ProctorEngine:
                 "baseline_yaw": self.baseline_yaw,
                 "baseline_pitch": self.baseline_pitch,
                 "active_alerts": active_alerts,
+                "recent_warnings": recent_warnings,
                 "subsystems": {
                     "camera": cam_stat,
                     "face_detector": face_status_label,
@@ -681,5 +708,3 @@ class ProctorEngine:
                 **self.state,
                 "session_id": self.session_id,
             }
-
-

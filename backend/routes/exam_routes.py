@@ -4,7 +4,10 @@ import time
 from datetime import datetime
 from typing import Optional
 
+import cv2
+import numpy as np
 from flask import Blueprint, Response, jsonify, send_file, session, stream_with_context
+from flask import request
 
 from ai_modules.proctor_engine import ProctorEngine
 from backend.database.db_manager import DatabaseManager
@@ -49,7 +52,8 @@ def start_exam():
                 }
             ), 503
 
-        engine.start(session_id)
+        payload = request.get_json(silent=True) or {}
+        engine.start(session_id, use_camera=payload.get("source") != "browser")
 
         if not engine.is_running():
             logger.error("Failed to start camera for proctor engine.")
@@ -73,6 +77,20 @@ def start_exam():
         return jsonify(engine.get_status())
 
 
+@exam_bp.route("/exam/frame", methods=["POST"])
+def process_browser_frame():
+    with _engine_lock:
+        engine = _active_engine
+        if engine is None or not engine.is_running():
+            return jsonify({"error": "The proctoring session is not running."}), 409
+
+    frame = cv2.imdecode(np.frombuffer(request.get_data(), dtype=np.uint8), cv2.IMREAD_COLOR)
+    if frame is None:
+        return jsonify({"error": "The camera frame is invalid."}), 400
+    engine.process_external_frame(frame)
+    return jsonify({"processed": True})
+
+
 @exam_bp.route("/exam/stop", methods=["POST"])
 def stop_exam():
     with _engine_lock:
@@ -87,6 +105,7 @@ def stop_exam():
                     "looking_away": False,
                     "person_count": 0,
                     "warning_count": 0,
+                    "recent_warnings": [],
                     "gaze_state": "UNKNOWN",
                     "calibration_status": "idle",
                     "multiple_person": False,
@@ -137,6 +156,7 @@ def stop_exam():
             "multiple_person": False,
             "phone_detected": False,
             "warning_count": engine.warning_count if engine else 0,
+            "recent_warnings": [],
             "session_id": session_id,
             "risk_score": risk_score if session_id is not None else 0,
             "risk_category": risk_category if session_id is not None else "Low",
@@ -207,6 +227,7 @@ def exam_status():
                     "multiple_person": False,
                     "phone_detected": False,
                     "warning_count": 0,
+                    "recent_warnings": [],
                     "gaze_state": "UNKNOWN",
                     "calibration_status": "idle",
                     "active_alerts": [],
@@ -229,4 +250,3 @@ def exam_status():
                 }
             )
         return jsonify(_active_engine.get_status())
-

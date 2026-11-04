@@ -8,3 +8,25 @@
 2026-11-01 19:28:45,650 INFO examshield.incidents session_id=12 event_type=PHONE_DETECTED confidence=0.837 severity=HIGH details=Cell phone detected in the frame with confidence 0.84.
 2026-11-01 19:28:51,318 INFO examshield.incidents session_id=12 event_type=PHONE_DETECTED confidence=0.689 severity=HIGH details=Cell phone detected in the frame with confidence 0.69.
 2026-11-01 19:29:04,538 INFO examshield.incidents session_id=12 event_type=LOOKING_AWAY confidence=0.950 severity=MEDIUM details=Head deviation (LOOKING_DOWN): yaw=-1.1°, pitch=12.9° for 3 seconds.
+2026-11-02 11:03:00,229 INFO examshield.incidents session_id=16 event_type=MULTIPLE_PERSON confidence=0.916 severity=HIGH details=Detected 4 persons in the camera frame.
+2026-11-02 11:03:04,049 INFO examshield.incidents session_id=16 event_type=MULTIPLE_PERSON confidence=0.857 severity=HIGH details=Detected 3 persons in the camera frame.
+2026-11-02 11:03:11,641 INFO examshield.incidents session_id=16 event_type=MULTIPLE_PERSON confidence=0.742 severity=HIGH details=Detected 3 persons in the camera frame.
+2026-11-02 11:03:12,390 INFO examshield.incidents session_id=16 event_type=MULTIPLE_PERSON confidence=0.837 severity=HIGH details=Detected 3 persons in the camera frame.
+2026-11-02 11:03:16,196 INFO examshield.incidents session_id=16 event_type=MULTIPLE_PERSON confidence=0.784 severity=HIGH details=Detected 2 persons in the camera frame.
+2026-11-02 11:03:21,964 INFO examshield.incidents session_id=16 event_type=MULTIPLE_PERSON confidence=0.753 severity=HIGH details=Detected 2 persons in the camera frame.
+2026-11-02 11:03:23,991 INFO examshield.incidents session_id=16 event_type=MULTIPLE_PERSON confidence=0.825 severity=HIGH details=Detected 2 persons in the camera frame.
+2026-11-02 11:03:37,458 INFO examshield.incidents session_id=16 event_type=MULTIPLE_PERSON confidence=0.819 severity=HIGH details=Detected 4 persons in the camera frame.
+2026-11-02 11:03:49,279 INFO examshield.incidents session_id=16 event_type=PHONE_DETECTED confidence=0.714 severity=HIGH details=Cell phone detected in the frame with confidence 0.71.
+2026-11-02 11:03:50,980 INFO examshield.incidents session_id=16 event_type=MULTIPLE_PERSON confidence=0.592 severity=HIGH details=Detected 2 persons in the camera frame.
+2026-11-02 11:03:54,875 INFO examshield.incidents session_id=16 event_type=MULTIPLE_PERSON confidence=0.858 severity=HIGH details=Detected 2 persons in the camera frame.
+2026-11-02 11:14:45,348 INFO examshield.incidents session_id=17 event_type=MULTIPLE_PERSON confidence=0.884 severity=HIGH details=Detected 4 persons in the camera frame.
+2026-11-02 11:17:20,979 INFO examshield.incidents session_id=18 event_type=MULTIPLE_PERSON confidence=0.856 severity=HIGH details=Detected 3 persons in the camera frame.
+2026-11-03 11:10:42,084 INFO examshield.incidents session_id=19 event_type=MULTIPLE_PERSON confidence=0.878 severity=HIGH details=Detected 4 persons in the camera frame.
+2026-11-03 11:10:50,065 INFO examshield.incidents session_id=19 event_type=MULTIPLE_PERSON confidence=0.843 severity=HIGH details=Detected 3 persons in the camera frame.
+2026-11-03 11:11:01,352 INFO examshield.incidents session_id=19 event_type=MULTIPLE_PERSON confidence=0.863 severity=HIGH details=Detected 3 persons in the camera frame.
+2026-11-04 11:40:13,257 INFO examshield.incidents session_id=20 event_type=MULTIPLE_PERSON confidence=0.844 severity=HIGH details=Detected 2 persons in the camera frame.
+2026-11-04 11:40:17,550 INFO examshield.incidents session_id=20 event_type=MULTIPLE_PERSON confidence=0.932 severity=HIGH details=Detected 2 persons in the camera frame.
+2026-11-04 11:40:24,938 INFO examshield.incidents session_id=20 event_type=MULTIPLE_PERSON confidence=0.887 severity=HIGH details=Detected 2 persons in the camera frame.
+2026-11-04 11:40:32,064 INFO examshield.incidents session_id=20 event_type=PHONE_DETECTED confidence=0.917 severity=HIGH details=Cell phone detected in the frame with confidence 0.92.
+2026-11-04 11:40:34,391 INFO examshield.incidents session_id=20 event_type=MULTIPLE_PERSON confidence=0.664 severity=HIGH details=Detected 2 persons in the camera frame.
+2026-11-04 11:40:50,010 INFO examshield.incidents session_id=20 event_type=MULTIPLE_PERSON confidence=0.787 severity=HIGH details=Detected 2 persons in the camera frame.

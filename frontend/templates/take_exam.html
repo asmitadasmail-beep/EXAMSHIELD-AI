@@ -1,4 +1,86 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ page_title }} | ExamShield AI</title><link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"></head>
-<body><header class="site-header exam-header"><div class="brand-block"><div class="brand-mark">E</div><div><div class="brand-title">ExamShield AI</div><div class="brand-subtitle">{{ attempt.subject_name }} · {{ attempt.exam_name }}</div></div></div><span class="status-badge status-success">Practice session</span></header>
-<main class="exam-shell"><section class="question-panel"><div class="card-header-row"><p class="eyebrow">Multiple-choice examination</p><span id="saveStatus" class="status-badge status-neutral">Not started</span></div><div id="questionMount"></div><div class="exam-actions"><button class="secondary-button" id="previousQuestion" type="button">Previous</button><button class="primary-button" id="nextQuestion" type="button">Save & next</button></div><form id="submitForm" method="post" action="{{ url_for('learning.submit_exam', attempt_id=attempt.attempt_id) }}"><button class="primary-button" type="submit">Submit examination</button></form></section><aside class="palette-panel"><p class="eyebrow">Question palette</p><div id="questionPalette" class="question-palette"></div><p class="message">Answers are saved as you move between questions.</p></aside></main><script>window.examData={{ exam|tojson }};window.attemptId={{ attempt.attempt_id }};</script><script src="{{ url_for('static', filename='js/exam.js') }}"></script></body></html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ page_title }} | ExamShield AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header class="site-header exam-header">
+        <div class="brand-block">
+            <div class="brand-mark">E</div>
+            <div>
+                <div class="brand-title">ExamShield AI</div>
+                <div class="brand-subtitle">{{ attempt.subject_name }} · {{ attempt.exam_name }}</div>
+            </div>
+        </div>
+        <span class="status-badge status-success">Examination in progress</span>
+    </header>
+
+    <main class="exam-shell">
+        <section class="question-panel">
+            <div class="card-header-row">
+                <div>
+                    <p class="eyebrow">Multiple-choice examination</p>
+                    <h2>{{ attempt.exam_name }}</h2>
+                    <p class="message">{{ attempt.subject_name }}</p>
+                </div>
+                <div class="exam-timer-card">
+                    <span class="eyebrow">Time remaining</span>
+                    <strong id="examTimer">--:--</strong>
+                </div>
+            </div>
+            <div id="questionMount"></div>
+            <div class="exam-actions">
+                <button class="secondary-button" id="previousQuestion" type="button">Previous</button>
+                <button class="secondary-button" id="markReview" type="button">Mark for review</button>
+                <button class="primary-button" id="nextQuestion" type="button">Save &amp; next</button>
+            </div>
+            <form id="submitForm" method="post" action="{{ url_for('learning.submit_exam', attempt_id=attempt.attempt_id) }}">
+                <button class="primary-button" type="submit">Submit examination</button>
+            </form>
+        </section>
+
+        <aside class="exam-sidebar">
+            <section class="palette-panel camera-panel">
+                <div class="card-header-row">
+                    <p class="eyebrow">Live proctoring</p>
+                    <span id="cameraStatus" class="status-badge status-neutral">Camera pending</span>
+                </div>
+                <div class="camera-feed-shell">
+                    <video id="cameraVideo" class="camera-stream" autoplay muted playsinline hidden></video>
+                    <div id="cameraMessage" class="camera-placeholder">
+                        <strong>Camera access is required</strong>
+                        <span>Allow camera permission to begin the examination.</span>
+                    </div>
+                </div>
+                <p id="cameraError" class="form-error camera-error" hidden></p>
+                <ul class="proctor-checklist">
+                    <li id="faceCheck" class="check-item check-alert"><span class="check-icon">?</span><span class="check-label">Face detection</span><strong id="faceStatus" class="check-value">Waiting</strong></li>
+                    <li id="aiCheck" class="check-item check-alert"><span class="check-icon">?</span><span class="check-label">AI proctoring</span><strong id="aiStatus" class="check-value">Not started</strong></li>
+                </ul>
+            </section>
+            <section class="palette-panel">
+                <div class="card-header-row">
+                    <p class="eyebrow">Warnings</p>
+                    <strong id="warningCount" class="warning-count">0</strong>
+                </div>
+                <ul id="recentWarnings" class="warning-list"><li>No warnings recorded.</li></ul>
+            </section>
+            <section class="palette-panel">
+                <p class="eyebrow">Question navigation</p>
+                <div id="questionPalette" class="question-palette"></div>
+                <p id="saveStatus" class="message">Answers are saved as you move between questions.</p>
+            </section>
+        </aside>
+    </main>
+    <script id="examConfig" type="application/json">{{ {"exam": exam, "attemptId": attempt.attempt_id}|tojson }}</script>
+    <script>
+        const examConfig = JSON.parse(document.getElementById("examConfig").textContent);
+        window.examData = examConfig.exam;
+        window.attemptId = examConfig.attemptId;
+    </script>
+    <script src="{{ url_for('static', filename='js/exam.js') }}"></script>
+</body>
+</html>
