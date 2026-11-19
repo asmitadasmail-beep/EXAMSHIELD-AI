@@ -1,0 +1,455 @@
+{% extends "admin/layout.html" %}
+{% set active_tab = "question_bank" %}
+
+{% block heading %}Question Bank{% endblock %}
+
+{% block header_actions %}
+<div class="header-actions">
+    <a href="{{ url_for('admin.question_composer') }}" class="btn-secondary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px; border-color: #93c5fd; color: #1d4ed8; background: #eff6ff;">
+        <span>✨</span> Smart Question Composer
+    </a>
+    <button type="button" class="btn-primary" data-action="open-add-modal">
+        + Add New Question
+    </button>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+<div style="max-width: 1300px; margin: 0 auto;">
+    <input type="hidden" name="csrf_token" value="{{ admin_csrf_token() }}">
+
+    <!-- Status Alert Banner -->
+    <div id="bank-alert" class="alert-banner" style="display: none; margin-bottom: 1.5rem; padding: 0.85rem 1.25rem; border-radius: var(--radius-md); font-weight: 500;"></div>
+
+    <!-- Overview Statistics Cards -->
+    <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+        <div class="stat-card">
+            <span class="stat-label">Total Questions</span>
+            <div class="stat-value">{{ filter_options.total_questions }}</div>
+            <span class="stat-sub">Across faculty repository</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Subjects Covered</span>
+            <div class="stat-value">{{ filter_options.subjects|length }}</div>
+            <span class="stat-sub">Academic curricula</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">My Questions</span>
+            <div class="stat-value">{{ filter_options.my_questions }}</div>
+            <span class="stat-sub">Authored by you</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Matching Filters</span>
+            <div class="stat-value" style="color: var(--primary);">{{ pagination.total_items }}</div>
+            <span class="stat-sub">Available to import</span>
+        </div>
+    </div>
+
+    <!-- Filter & Search Toolbar -->
+    <div class="bank-filter-panel">
+        <form id="bank-filters-form" method="get" action="{{ url_for('admin.question_bank') }}">
+            <div class="bank-search-row">
+                <div class="bank-search-input-wrap">
+                    <span class="bank-search-icon">&#128269;</span>
+                    <input type="text" name="search" value="{{ active_filters.search }}" placeholder="Search questions by statement keywords, topics, or explanations...">
+                </div>
+                <button type="submit" class="btn-primary" style="padding: 0.65rem 1.25rem;">
+                    Search
+                </button>
+                {% if active_filters.search or active_filters.subject_id or active_filters.topic or active_filters.difficulty or active_filters.type or active_filters.marks %}
+                <a href="{{ url_for('admin.question_bank') }}" class="btn-secondary" style="padding: 0.65rem 1rem;">
+                    Clear Filters
+                </a>
+                {% endif %}
+            </div>
+
+            <div class="bank-filters-grid">
+                <!-- Subject Filter -->
+                <div class="filter-group">
+                    <label>Subject</label>
+                    <select name="subject_id">
+                        <option value="">All Subjects</option>
+                        {% for subj in filter_options.subjects %}
+                        <option value="{{ subj.subject_id }}" {% if active_filters.subject_id == subj.subject_id %}selected{% endif %}>{{ subj.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Topic Filter -->
+                <div class="filter-group">
+                    <label>Chapter / Topic</label>
+                    <input type="text" name="topic" value="{{ active_filters.topic }}" placeholder="e.g. Trees, Mechanics...">
+                </div>
+
+                <!-- Difficulty Filter -->
+                <div class="filter-group">
+                    <label>Difficulty</label>
+                    <select name="difficulty">
+                        <option value="">All Difficulties</option>
+                        <option value="Easy" {% if active_filters.difficulty == 'Easy' %}selected{% endif %}>Easy</option>
+                        <option value="Medium" {% if active_filters.difficulty == 'Medium' %}selected{% endif %}>Medium</option>
+                        <option value="Hard" {% if active_filters.difficulty == 'Hard' %}selected{% endif %}>Hard</option>
+                    </select>
+                </div>
+
+                <!-- Question Type Filter -->
+                <div class="filter-group">
+                    <label>Question Type</label>
+                    <select name="type">
+                        <option value="">All Question Types</option>
+                        <option value="mcq" {% if active_filters.type == 'mcq' %}selected{% endif %}>Multiple Choice (MCQ)</option>
+                        <option value="multiple_select" {% if active_filters.type == 'multiple_select' %}selected{% endif %}>Multiple Select (MSQ)</option>
+                        <option value="true_false" {% if active_filters.type == 'true_false' %}selected{% endif %}>True / False</option>
+                        <option value="fill_blank" {% if active_filters.type == 'fill_blank' %}selected{% endif %}>Fill in Blanks</option>
+                        <option value="short_answer" {% if active_filters.type == 'short_answer' %}selected{% endif %}>Short Answer</option>
+                        <option value="long_answer" {% if active_filters.type == 'long_answer' %}selected{% endif %}>Long Answer</option>
+                        <option value="numerical" {% if active_filters.type == 'numerical' %}selected{% endif %}>Numerical</option>
+                    </select>
+                </div>
+
+                <!-- Marks Filter -->
+                <div class="filter-group">
+                    <label>Marks</label>
+                    <select name="marks">
+                        <option value="">All Marks</option>
+                        <option value="1" {% if active_filters.marks == 1 %}selected{% endif %}>1 Mark</option>
+                        <option value="2" {% if active_filters.marks == 2 %}selected{% endif %}>2 Marks</option>
+                        <option value="3" {% if active_filters.marks == 3 %}selected{% endif %}>3 Marks</option>
+                        <option value="4" {% if active_filters.marks == 4 %}selected{% endif %}>4 Marks</option>
+                        <option value="5" {% if active_filters.marks == 5 %}selected{% endif %}>5 Marks</option>
+                    </select>
+                </div>
+
+                <!-- Sort Order -->
+                <div class="filter-group">
+                    <label>Sort By</label>
+                    <select name="sort">
+                        <option value="newest" {% if active_filters.sort == 'newest' %}selected{% endif %}>Date: Newest First</option>
+                        <option value="oldest" {% if active_filters.sort == 'oldest' %}selected{% endif %}>Date: Oldest First</option>
+                        <option value="marks_desc" {% if active_filters.sort == 'marks_desc' %}selected{% endif %}>Marks: High to Low</option>
+                        <option value="marks_asc" {% if active_filters.sort == 'marks_asc' %}selected{% endif %}>Marks: Low to High</option>
+                        <option value="difficulty" {% if active_filters.sort == 'difficulty' %}selected{% endif %}>Difficulty Level</option>
+                        <option value="subject" {% if active_filters.sort == 'subject' %}selected{% endif %}>Subject Name</option>
+                        <option value="statement" {% if active_filters.sort == 'statement' %}selected{% endif %}>Question Statement (A-Z)</option>
+                    </select>
+                </div>
+
+                <!-- Per Page -->
+                <div class="filter-group">
+                    <label>Per Page</label>
+                    <select name="per_page">
+                        <option value="10" {% if active_filters.per_page == 10 %}selected{% endif %}>10</option>
+                        <option value="15" {% if active_filters.per_page == 15 %}selected{% endif %}>15</option>
+                        <option value="25" {% if active_filters.per_page == 25 %}selected{% endif %}>25</option>
+                        <option value="50" {% if active_filters.per_page == 50 %}selected{% endif %}>50</option>
+                    </select>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Floating Bulk Actions Toolbar (Visible when 1+ selected) -->
+    <div id="bank-bulk-bar" class="bank-bulk-bar" style="display: none;">
+        <div style="display: flex; align-items: center;">
+            <span id="bulk-selected-count" class="bulk-count-badge">0 selected</span>
+            <span style="font-size: 0.88rem; font-weight: 500;">questions selected for batch operation</span>
+        </div>
+        <div class="bulk-actions-btns">
+            <button type="button" id="btn-bulk-import" class="btn-bulk-action">
+                <span>&#128229;</span> Import into Examination
+            </button>
+            <button type="button" id="btn-bulk-delete" class="btn-bulk-action btn-bulk-delete">
+                <span>&#128465;</span> Delete Selected
+            </button>
+            <button type="button" id="btn-bulk-deselect" class="btn-bulk-action">
+                Deselect All
+            </button>
+        </div>
+    </div>
+
+    <!-- Questions Table Panel -->
+    <div class="content-panel" style="padding: 0; overflow: hidden;">
+        <div class="table-grid" style="margin: 0;">
+            <table class="bank-table">
+                <thead>
+                    <tr>
+                        <th style="width: 40px; text-align: center;">
+                            <input type="checkbox" id="select-all-questions" class="q-select-checkbox" title="Select all on this page">
+                        </th>
+                        <th>Question Statement</th>
+                        <th>Subject &amp; Topic</th>
+                        <th>Type</th>
+                        <th>Difficulty</th>
+                        <th>Marks</th>
+                        <th>Created By</th>
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for q in questions %}
+                    <tr>
+                        <td style="text-align: center;">
+                            <input type="checkbox" class="q-row-checkbox q-select-checkbox" value="{{ q.bank_question_id }}" data-statement="{{ q.statement[:30] }}">
+                        </td>
+                        <td class="q-statement-cell">
+                            <div class="q-statement-text" title="{{ q.statement }}">
+                                {{ q.statement }}
+                            </div>
+                            <div class="q-meta-subline">
+                                {% if q.options and q.options|length > 0 %}
+                                <span>{{ q.options|length }} options</span>
+                                {% elif q.correct_answer_text %}
+                                <span>Answer: {{ q.correct_answer_text[:25] }}...</span>
+                                {% endif %}
+                                {% if q.explanation %}
+                                <span>&bull; Rubric available</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <div style="font-weight: 600; color: var(--text-primary); font-size: 0.85rem;">{{ q.subject_name }}</div>
+                            <div style="font-size: 0.78rem; color: var(--text-muted);">{{ q.topic or "General" }}</div>
+                        </td>
+                        <td>
+                            <span class="badge badge-neutral" style="font-size: 0.75rem; text-transform: uppercase;">
+                                {{ q.question_type }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if q.difficulty == 'Easy' %}
+                            <span class="badge-diff-easy">Easy</span>
+                            {% elif q.difficulty == 'Hard' %}
+                            <span class="badge-diff-hard">Hard</span>
+                            {% else %}
+                            <span class="badge-diff-medium">Medium</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong>{{ q.marks }}</strong>
+                            {% if q.negative_marks and q.negative_marks > 0 %}
+                            <small style="color: var(--danger); display: block; font-size: 0.72rem;">-{{ q.negative_marks }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div style="font-size: 0.82rem; font-weight: 600; color: var(--text-primary);">
+                                {{ q.creator_name or "Faculty" }}
+                            </div>
+                            <div style="font-size: 0.72rem; color: var(--text-muted);">
+                                {{ q.created_at[:10] if q.created_at else "Standard" }}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="bank-row-actions">
+                                <button type="button" class="btn-row-action" data-action="preview-question" data-id="{{ q.bank_question_id }}" title="Quick Preview">
+                                    Preview
+                                </button>
+                                {% if q.can_edit %}
+                                <button type="button" class="btn-row-action" data-action="edit-question" data-id="{{ q.bank_question_id }}" title="Edit Question">
+                                    Edit
+                                </button>
+                                {% endif %}
+                                <button type="button" class="btn-row-action" data-action="duplicate-question" data-id="{{ q.bank_question_id }}" title="Duplicate Question">
+                                    Copy
+                                </button>
+                                <button type="button" class="btn-row-action action-import" data-action="import-single-question" data-id="{{ q.bank_question_id }}" title="Import into Exam">
+                                    Import
+                                </button>
+                                {% if q.can_delete %}
+                                <button type="button" class="btn-row-action action-delete" data-action="delete-question" data-id="{{ q.bank_question_id }}" title="Delete Question">
+                                    &times;
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 3rem 1.5rem;">
+                            <div style="font-size: 2.2rem; margin-bottom: 8px;">📚</div>
+                            <h4 style="margin: 0 0 6px; font-size: 1.05rem; color: var(--text-primary);">No questions found in this view</h4>
+                            <p style="margin: 0 0 1rem; font-size: 0.85rem; color: var(--text-muted);">No authorized questions matched your search criteria. Try modifying your filters or create a new reusable question.</p>
+                            <button type="button" class="btn-primary" data-action="open-add-modal">+ Add First Question</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pagination Controls -->
+    {% if pagination.total_pages > 1 %}
+    <div class="bank-pagination-bar">
+        <div class="pagination-info">
+            Showing {{ ((pagination.current_page - 1) * pagination.per_page) + 1 }} to {{ [pagination.current_page * pagination.per_page, pagination.total_items]|min }} of {{ pagination.total_items }} questions
+        </div>
+        <div class="pagination-nav">
+            {% if pagination.has_prev %}
+            <a href="{{ url_for('admin.question_bank', search=active_filters.search, subject_id=active_filters.subject_id, topic=active_filters.topic, difficulty=active_filters.difficulty, type=active_filters.type, marks=active_filters.marks, sort=active_filters.sort, per_page=active_filters.per_page, page=pagination.current_page - 1) }}" class="page-btn">
+                &larr; Prev
+            </a>
+            {% else %}
+            <span class="page-btn disabled">&larr; Prev</span>
+            {% endif %}
+
+            {% for p in range(1, pagination.total_pages + 1) %}
+                {% if p == pagination.current_page %}
+                <span class="page-btn active">{{ p }}</span>
+                {% elif p <= 3 or p >= pagination.total_pages - 2 or (p >= pagination.current_page - 1 and p <= pagination.current_page + 1) %}
+                <a href="{{ url_for('admin.question_bank', search=active_filters.search, subject_id=active_filters.subject_id, topic=active_filters.topic, difficulty=active_filters.difficulty, type=active_filters.type, marks=active_filters.marks, sort=active_filters.sort, per_page=active_filters.per_page, page=p) }}" class="page-btn">{{ p }}</a>
+                {% elif p == 4 or p == pagination.total_pages - 3 %}
+                <span class="page-btn disabled">...</span>
+                {% endif %}
+            {% endfor %}
+
+            {% if pagination.has_next %}
+            <a href="{{ url_for('admin.question_bank', search=active_filters.search, subject_id=active_filters.subject_id, topic=active_filters.topic, difficulty=active_filters.difficulty, type=active_filters.type, marks=active_filters.marks, sort=active_filters.sort, per_page=active_filters.per_page, page=pagination.current_page + 1) }}" class="page-btn">
+                Next &rarr;
+            </a>
+            {% else %}
+            <span class="page-btn disabled">Next &rarr;</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- MODAL: ADD / EDIT QUESTION EDITOR -->
+<div id="modal-question-editor" class="modal-overlay" style="display: none;">
+    <div class="modal-card" style="max-width: 850px;">
+        <div class="modal-header">
+            <h3 id="editor-modal-title">Add New Reusable Question</h3>
+            <button type="button" class="btn-icon-subtle" data-action="close-modal" style="font-size: 1.4rem;">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="question-editor-form" onsubmit="return false;">
+                <div class="admin-form-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 1rem;">
+                    <div class="form-group">
+                        <label style="font-weight: 600;">Subject <span style="color: var(--danger);">*</span></label>
+                        <select id="editor-subject" class="form-control" required>
+                            {% for subj in filter_options.subjects %}
+                            <option value="{{ subj.subject_id }}">{{ subj.name }}</option>
+                            {% endfor %}
+                            <option value="__custom__">+ Enter Custom Subject...</option>
+                        </select>
+                        <input type="text" id="editor-subject-custom" class="form-control" placeholder="Subject name" style="display: none; margin-top: 6px;">
+                    </div>
+
+                    <div class="form-group">
+                        <label style="font-weight: 600;">Topic / Chapter</label>
+                        <input type="text" id="editor-topic" class="form-control" placeholder="e.g. Unit 3: Dynamic Programming">
+                    </div>
+
+                    <div class="form-group">
+                        <label style="font-weight: 600;">Difficulty</label>
+                        <select id="editor-difficulty" class="form-control">
+                            <option value="Easy">Easy</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="Hard">Hard</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label style="font-weight: 600;">Question Type</label>
+                        <select id="editor-type" class="form-control">
+                            <option value="mcq">Multiple Choice (MCQ)</option>
+                            <option value="multiple_select">Multiple Select (MSQ)</option>
+                            <option value="true_false">True / False</option>
+                            <option value="fill_blank">Fill in Blanks</option>
+                            <option value="short_answer">Short Answer</option>
+                            <option value="long_answer">Long Answer</option>
+                            <option value="numerical">Numerical</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label style="font-weight: 600;">Marks <span style="color: var(--danger);">*</span></label>
+                        <input type="number" id="editor-marks" class="form-control" value="1" min="0.5" step="0.5" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label style="font-weight: 600;">Negative Marks</label>
+                        <input type="number" id="editor-negative-marks" class="form-control" value="0" min="0" step="0.25">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label style="font-weight: 600;">Question Text / Scenario <span style="color: var(--danger);">*</span></label>
+                    <textarea id="editor-statement" class="form-control" rows="3" placeholder="Enter the complete question text or problem scenario..." required></textarea>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label style="font-weight: 600;">Optional Image / Figure URL</label>
+                    <input type="text" id="editor-image-url" class="form-control" placeholder="https://example.com/figure.png">
+                    <div id="editor-img-preview" style="display: none; margin-top: 6px;">
+                        <img src="" alt="Figure preview" style="max-height: 120px; border-radius: 4px; border: 1px solid var(--border-color);">
+                    </div>
+                </div>
+
+                <!-- Dynamic Answer Inputs -->
+                <div id="editor-answers-container" style="margin-bottom: 1rem;">
+                    <!-- Options or answer text dynamically rendered by JS -->
+                </div>
+
+                <div class="form-group">
+                    <label style="font-weight: 600;">Explanation / Solution Rubric</label>
+                    <textarea id="editor-explanation" class="form-control" rows="2" placeholder="Detailed explanation or scoring rubric displayed in answer key..."></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-secondary" data-action="close-modal">Cancel</button>
+            <button type="button" id="btn-save-question" class="btn-primary">Save Question</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: QUESTION PREVIEW -->
+<div id="modal-question-preview" class="modal-overlay" style="display: none;">
+    <div class="modal-card" style="max-width: 750px;">
+        <div class="modal-header">
+            <h3>Question Detail &amp; Solution Preview</h3>
+            <button type="button" class="btn-icon-subtle" data-action="close-modal" style="font-size: 1.4rem;">&times;</button>
+        </div>
+        <div class="modal-body" id="preview-modal-body">
+            <!-- Populated dynamically via fetch -->
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-secondary" data-action="close-modal">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: IMPORT INTO EXAMINATION -->
+<div id="modal-import-exam" class="modal-overlay" style="display: none;">
+    <div class="modal-card" style="max-width: 550px;">
+        <div class="modal-header">
+            <h3>Import Questions into Examination</h3>
+            <button type="button" class="btn-icon-subtle" data-action="close-modal" style="font-size: 1.4rem;">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="margin-top: 0; font-size: 0.9rem; color: var(--text-secondary);">
+                You are about to import <strong id="import-selected-count" style="color: var(--primary);">0 question(s)</strong> into an authorized examination. New question instances will be created in the target paper, preserving these reusable bank items.
+            </p>
+            <div class="form-group" style="margin-top: 1rem;">
+                <label style="font-weight: 600; display: block; margin-bottom: 6px;">Select Target Examination <span style="color: var(--danger);">*</span></label>
+                <select id="import-target-exam" class="form-control" required style="width: 100%; padding: 0.65rem;">
+                    <option value="">-- Choose Target Examination --</option>
+                    {% for ex in authorized_exams %}
+                    <option value="{{ ex.exam_id }}">{{ ex.name }} ({{ ex.subject_name }} &bull; {{ ex.duration_minutes }} min &bull; {{ ex.max_marks }} marks)</option>
+                    {% else %}
+                    <option value="" disabled>No authorized examinations available to import into</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-secondary" data-action="close-modal">Cancel</button>
+            <button type="button" id="btn-confirm-import" class="btn-primary">Confirm Import</button>
+        </div>
+    </div>
+</div>
+
+<!-- Client-side script -->
+<script src="{{ url_for('static', filename='js/admin_question_bank.js') }}"></script>
+{% endblock %}

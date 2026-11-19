@@ -1,0 +1,165 @@
+{% extends "admin/layout.html" %}
+{% set active_tab = "evaluations" %}
+{% block heading %}Subjective Evaluation Queue{% endblock %}
+{% block admin_content %}
+<div class="dashboard-content">
+    <div class="dashboard-header-banner">
+        <div class="header-meta">
+            <h2>Subjective Evaluation &amp; Grading</h2>
+            <p>Review student responses for short-answer and long-answer questions, assign marks, provide qualitative feedback, and publish final results.</p>
+        </div>
+        <div class="header-actions">
+            {% if active_exam_id %}
+            <form method="post" action="{{ url_for('admin.publish_all_exam_evaluations', exam_id=active_exam_id) }}" style="display: inline;" onsubmit="return confirm('Publish verified results to all evaluated candidates for this examination?');">
+                <input type="hidden" name="csrf_token" value="{{ admin_csrf_token() }}">
+                <button type="submit" class="btn-primary">Publish All Results for Exam</button>
+            </form>
+            {% endif %}
+            <a href="{{ url_for('admin.reports') }}" class="btn-secondary">Performance Reports</a>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="dashboard-card" style="margin-bottom: 1.5rem; padding: 1.25rem;">
+        <form method="get" action="{{ url_for('admin.evaluations_list') }}" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end;">
+            <div style="flex: 1; min-width: 200px;">
+                <label for="examFilter" style="display: block; font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 0.25rem;">Examination</label>
+                <select name="exam_id" id="examFilter" class="form-control" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px;" onchange="this.form.submit()">
+                    <option value="">All Authorized Examinations</option>
+                    {% for ex in filter_options.exams %}
+                    <option value="{{ ex.exam_id }}" {% if active_exam_id == ex.exam_id %}selected{% endif %}>{{ ex.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="flex: 1; min-width: 180px;">
+                <label for="searchFilter" style="display: block; font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 0.25rem;">Candidate Search</label>
+                <input type="text" name="search" id="searchFilter" value="{{ search }}" placeholder="Search by name or USN..." class="form-control" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px;">
+            </div>
+
+            <input type="hidden" name="status" value="{{ active_status }}">
+
+            <div style="display: flex; gap: 0.5rem;">
+                <button type="submit" class="btn-primary" style="padding: 0.5rem 1rem;">Filter</button>
+                {% if active_exam_id or search or (active_status and active_status != 'all') %}
+                <a href="{{ url_for('admin.evaluations_list') }}" class="btn-secondary" style="padding: 0.5rem 1rem;">Reset</a>
+                {% endif %}
+            </div>
+        </form>
+
+        <!-- Status Filter Tabs -->
+        <div style="display: flex; gap: 0.5rem; margin-top: 1.25rem; border-top: 1px solid #f1f5f9; padding-top: 1rem; overflow-x: auto;">
+            <a href="{{ url_for('admin.evaluations_list', exam_id=active_exam_id or '', search=search, status='all') }}"
+               class="tab-btn {% if not active_status or active_status == 'all' %}active{% endif %}"
+               style="padding: 0.35rem 0.85rem; border-radius: 9999px; text-decoration: none; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; {% if not active_status or active_status == 'all' %}background: #2563eb; color: #fff;{% else %}background: #f1f5f9; color: #475569;{% endif %}">
+                All Submissions <span style="font-size: 0.75rem; opacity: 0.85;">({{ counts.all }})</span>
+            </a>
+            <a href="{{ url_for('admin.evaluations_list', exam_id=active_exam_id or '', search=search, status='pending_evaluation') }}"
+               class="tab-btn {% if active_status == 'pending_evaluation' %}active{% endif %}"
+               style="padding: 0.35rem 0.85rem; border-radius: 9999px; text-decoration: none; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; {% if active_status == 'pending_evaluation' %}background: #d97706; color: #fff;{% else %}background: #fef3c7; color: #92400e;{% endif %}">
+                Pending Evaluation <span style="font-size: 0.75rem; opacity: 0.85;">({{ counts.pending }})</span>
+            </a>
+            <a href="{{ url_for('admin.evaluations_list', exam_id=active_exam_id or '', search=search, status='evaluated') }}"
+               class="tab-btn {% if active_status == 'evaluated' %}active{% endif %}"
+               style="padding: 0.35rem 0.85rem; border-radius: 9999px; text-decoration: none; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; {% if active_status == 'evaluated' %}background: #0284c7; color: #fff;{% else %}background: #e0f2fe; color: #0369a1;{% endif %}">
+                Draft Evaluated <span style="font-size: 0.75rem; opacity: 0.85;">({{ counts.evaluated }})</span>
+            </a>
+            <a href="{{ url_for('admin.evaluations_list', exam_id=active_exam_id or '', search=search, status='published') }}"
+               class="tab-btn {% if active_status == 'published' %}active{% endif %}"
+               style="padding: 0.35rem 0.85rem; border-radius: 9999px; text-decoration: none; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; {% if active_status == 'published' %}background: #059669; color: #fff;{% else %}background: #d1fae5; color: #065f46;{% endif %}">
+                Published Results <span style="font-size: 0.75rem; opacity: 0.85;">({{ counts.published }})</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Evaluations Table -->
+    <div class="dashboard-card">
+        <div class="card-header-bar">
+            <div class="card-title-group">
+                <h3>Candidate Submissions ({{ evaluations|length }})</h3>
+                <p>Click on any candidate to inspect responses and input subjective marks.</p>
+            </div>
+        </div>
+
+        <div class="card-body-panel" style="padding: 0;">
+            {% if evaluations and evaluations|length > 0 %}
+            <div class="table-scroll-shell">
+                <table class="data-table" style="width: 100%;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #e2e8f0; background: #f8fafc;">
+                            <th style="padding: 0.875rem 1rem;">Candidate</th>
+                            <th style="padding: 0.875rem 1rem;">Examination &amp; Subject</th>
+                            <th style="padding: 0.875rem 1rem;">Submitted</th>
+                            <th style="padding: 0.875rem 1rem;">Subjective Progress</th>
+                            <th style="padding: 0.875rem 1rem;">Score &amp; Grade</th>
+                            <th style="padding: 0.875rem 1rem;">Status</th>
+                            <th style="padding: 0.875rem 1rem; text-align: right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in evaluations %}
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 0.875rem 1rem;">
+                                <div style="font-weight: 600; color: #1e293b;">{{ item.student_name }}</div>
+                                <div style="font-size: 0.8rem; color: #64748b;">USN: {{ item.student_usn }}</div>
+                            </td>
+                            <td style="padding: 0.875rem 1rem;">
+                                <div style="font-weight: 600; color: #1e293b;">{{ item.exam_name }}</div>
+                                <div style="font-size: 0.8rem; color: #64748b;">{{ item.subject_name or 'General' }}</div>
+                            </td>
+                            <td style="padding: 0.875rem 1rem; font-size: 0.85rem; color: #64748b;">
+                                {{ item.submitted_at or 'In Progress' }}
+                            </td>
+                            <td style="padding: 0.875rem 1rem;">
+                                {% if item.total_subjective > 0 %}
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <div style="flex: 1; height: 6px; background: #e2e8f0; border-radius: 9999px; overflow: hidden; min-width: 60px;">
+                                            <div style="width: {{ (item.evaluated_subjective / item.total_subjective * 100)|round }}%; height: 100%; background: #2563eb;"></div>
+                                        </div>
+                                        <span style="font-size: 0.8rem; font-weight: 600; color: #475569;">{{ item.evaluated_subjective }}/{{ item.total_subjective }}</span>
+                                    </div>
+                                {% else %}
+                                    <span style="font-size: 0.8rem; color: #94a3b8;">Objective only</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 0.875rem 1rem;">
+                                {% if item.marks_obtained is not none %}
+                                    <strong style="color: #1e293b;">{{ item.marks_obtained }} / {{ item.max_marks }}</strong>
+                                    <span style="font-size: 0.85rem; color: #64748b;">({{ item.percentage }}%)</span>
+                                    {% if item.grade %}
+                                    <span style="display: inline-block; padding: 0.15rem 0.45rem; background: #f1f5f9; border-radius: 4px; font-weight: 700; font-size: 0.8rem; margin-left: 0.25rem;">{{ item.grade }}</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span style="color: #94a3b8;">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 0.875rem 1rem;">
+                                {% if item.evaluation_status == 'published' %}
+                                <span class="status-pill pill-success" style="background: #d1fae5; color: #065f46; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600;">Published</span>
+                                {% elif item.evaluation_status == 'evaluated' %}
+                                <span class="status-pill pill-primary" style="background: #e0f2fe; color: #0369a1; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600;">Draft Evaluated</span>
+                                {% else %}
+                                <span class="status-pill pill-warning" style="background: #fef3c7; color: #92400e; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600;">Pending Review</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 0.875rem 1rem; text-align: right;">
+                                <a href="{{ url_for('admin.evaluate_attempt', attempt_id=item.attempt_id) }}" class="btn-secondary" style="padding: 0.4rem 0.85rem; font-size: 0.85rem; text-decoration: none;">
+                                    {% if item.evaluation_status == 'published' %}View / Re-evaluate{% else %}Evaluate Answer{% endif %}
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div style="padding: 3rem 1.5rem; text-align: center; color: #64748b;">
+                <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">📝</div>
+                <h4 style="color: #1e293b; margin-bottom: 0.25rem;">No Submissions Found</h4>
+                <p style="font-size: 0.9rem;">No candidate submissions match your current filter parameters.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

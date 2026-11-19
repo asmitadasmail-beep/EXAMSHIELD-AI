@@ -1,0 +1,12 @@
+timestamp,event_type,confidence,severity,details
+2026-11-02 05:33:00,MULTIPLE_PERSON,0.915605366230011,HIGH,Detected 4 persons in the camera frame.
+2026-11-02 05:33:04,MULTIPLE_PERSON,0.8566073775291443,HIGH,Detected 3 persons in the camera frame.
+2026-11-02 05:33:11,MULTIPLE_PERSON,0.7423061728477478,HIGH,Detected 3 persons in the camera frame.
+2026-11-02 05:33:12,MULTIPLE_PERSON,0.8373270630836487,HIGH,Detected 3 persons in the camera frame.
+2026-11-02 05:33:16,MULTIPLE_PERSON,0.7844553589820862,HIGH,Detected 2 persons in the camera frame.
+2026-11-02 05:33:21,MULTIPLE_PERSON,0.7533552646636963,HIGH,Detected 2 persons in the camera frame.
+2026-11-02 05:33:23,MULTIPLE_PERSON,0.8247304558753967,HIGH,Detected 2 persons in the camera frame.
+2026-11-02 05:33:37,MULTIPLE_PERSON,0.8188799023628235,HIGH,Detected 4 persons in the camera frame.
+2026-11-02 05:33:49,PHONE_DETECTED,0.7139267325401306,HIGH,Cell phone detected in the frame with confidence 0.71.
+2026-11-02 05:33:50,MULTIPLE_PERSON,0.5921375751495361,HIGH,Detected 2 persons in the camera frame.
+2026-11-02 05:33:54,MULTIPLE_PERSON,0.8579230904579163,HIGH,Detected 2 persons in the camera frame.

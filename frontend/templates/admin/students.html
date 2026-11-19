@@ -1,0 +1,248 @@
+{% extends "admin/layout.html" %}
+{% set active_tab = "students" %}
+
+{% block heading %}Student Directory &amp; Performance Analytics{% endblock %}
+
+{% block header_actions %}
+<div class="header-actions">
+    <a href="{{ url_for('admin.reports') }}" class="btn-secondary" style="display: inline-flex; align-items: center; gap: 6px;">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span>Performance Reports</span>
+    </a>
+    <a href="{{ url_for('admin.exams') }}" class="btn-secondary" style="display: inline-flex; align-items: center; gap: 6px;">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span>Examinations</span>
+    </a>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+<div class="students-directory-shell" style="max-width: 1400px; margin: 0 auto;">
+    <!-- Overview Metrics Row -->
+    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+        <div class="stat-card" style="background: white; border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem; box-shadow: var(--shadow-sm);">
+            <span class="stat-label" style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Total Students</span>
+            <div class="stat-value" style="font-size: 1.8rem; font-weight: 800; color: var(--text-primary); margin-top: 4px;">{{ summary.total_students }}</div>
+            <span class="stat-sub" style="font-size: 0.75rem; color: var(--text-muted);">Enrolled &amp; registered candidates</span>
+        </div>
+        <div class="stat-card" style="background: white; border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem; box-shadow: var(--shadow-sm);">
+            <span class="stat-label" style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Active Accounts</span>
+            <div class="stat-value" style="font-size: 1.8rem; font-weight: 800; color: #059669; margin-top: 4px;">{{ summary.active_students }}</div>
+            <span class="stat-sub" style="font-size: 0.75rem; color: var(--text-muted);">Verified active profiles</span>
+        </div>
+        <div class="stat-card" style="background: white; border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem; box-shadow: var(--shadow-sm);">
+            <span class="stat-label" style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Assessment Participants</span>
+            <div class="stat-value" style="font-size: 1.8rem; font-weight: 800; color: var(--primary); margin-top: 4px;">{{ summary.attempted_count }}</div>
+            <span class="stat-sub" style="font-size: 0.75rem; color: var(--text-muted);">{{ summary.unattempted_count }} candidates pending exams</span>
+        </div>
+        <div class="stat-card" style="background: white; border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem; box-shadow: var(--shadow-sm);">
+            <span class="stat-label" style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Cohort Average Score</span>
+            <div class="stat-value" style="font-size: 1.8rem; font-weight: 800; color: #7c3aed; margin-top: 4px;">{{ summary.average_performance }}%</div>
+            <span class="stat-sub" style="font-size: 0.75rem; color: var(--text-muted);">Across completed examinations</span>
+        </div>
+    </div>
+
+    <!-- Filter & Search Toolbar Panel -->
+    <div class="content-panel" style="margin-bottom: 1.5rem; padding: 1.25rem; background: white; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+        <form id="studentFilterForm" method="get" action="{{ url_for('admin.students') }}">
+            <div style="display: grid; grid-template-columns: 2fr repeat(auto-fit, minmax(170px, 1fr)) auto; gap: 12px; align-items: end;">
+                <!-- Search input -->
+                <div class="filter-group">
+                    <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">Search Students</label>
+                    <div style="position: relative;">
+                        <input type="text" name="search" value="{{ current_filter.search }}" placeholder="Search by student name or registration number (USN)..." class="form-input" style="width: 100%; padding-left: 34px; box-sizing: border-box; height: 38px; border: 1px solid var(--border-color); border-radius: 6px;">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; left: 10px; top: 11px; color: var(--text-muted);"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    </div>
+                </div>
+
+                <!-- Department filter -->
+                <div class="filter-group">
+                    <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">Department</label>
+                    <select name="department" class="form-select" style="width: 100%; height: 38px; border: 1px solid var(--border-color); border-radius: 6px; padding: 0 8px;">
+                        <option value="">All Departments</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept }}" {% if current_filter.department == dept %}selected{% endif %}>{{ dept }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Semester filter -->
+                <div class="filter-group">
+                    <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">Semester</label>
+                    <select name="semester" class="form-select" style="width: 100%; height: 38px; border: 1px solid var(--border-color); border-radius: 6px; padding: 0 8px;">
+                        <option value="">All Semesters</option>
+                        {% for sem in ['Semester 1', 'Semester 2', 'Semester 3', 'Semester 4', 'Semester 5', 'Semester 6', 'Semester 7', 'Semester 8'] %}
+                        <option value="{{ sem }}" {% if current_filter.semester == sem %}selected{% endif %}>{{ sem }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Examination Participation Filter -->
+                <div class="filter-group">
+                    <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">Participation</label>
+                    <select name="participation" class="form-select" style="width: 100%; height: 38px; border: 1px solid var(--border-color); border-radius: 6px; padding: 0 8px;">
+                        <option value="">All Students</option>
+                        <option value="attempted" {% if current_filter.participation == 'attempted' %}selected{% endif %}>Attempted Exams</option>
+                        <option value="none" {% if current_filter.participation == 'none' %}selected{% endif %}>No Attempts Yet</option>
+                    </select>
+                </div>
+
+                <!-- Sort By -->
+                <div class="filter-group">
+                    <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">Sort By</label>
+                    <select name="sort_by" class="form-select" style="width: 100%; height: 38px; border: 1px solid var(--border-color); border-radius: 6px; padding: 0 8px;">
+                        <option value="name_asc" {% if current_filter.sort_by == 'name_asc' %}selected{% endif %}>Student Name (A-Z)</option>
+                        <option value="perf_desc" {% if current_filter.sort_by == 'perf_desc' %}selected{% endif %}>Performance (Highest First)</option>
+                        <option value="perf_asc" {% if current_filter.sort_by == 'perf_asc' %}selected{% endif %}>Performance (Lowest First)</option>
+                        <option value="attempts_desc" {% if current_filter.sort_by == 'attempts_desc' %}selected{% endif %}>Most Attempts</option>
+                        <option value="usn_asc" {% if current_filter.sort_by == 'usn_asc' %}selected{% endif %}>Registration No. (USN)</option>
+                    </select>
+                </div>
+
+                <!-- Action buttons -->
+                <div style="display: flex; gap: 8px;">
+                    <button type="submit" class="btn-primary" style="height: 38px; padding: 0 16px;">Filter</button>
+                    {% if current_filter.search or current_filter.department or current_filter.semester or current_filter.participation or (current_filter.sort_by and current_filter.sort_by != 'name_asc') %}
+                    <a href="{{ url_for('admin.students') }}" class="btn-secondary" style="height: 38px; padding: 0 12px; display: inline-flex; align-items: center;" title="Reset filters">Reset</a>
+                    {% endif %}
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Student Table Panel -->
+    <div class="content-panel" style="padding: 0; overflow: hidden; background: white; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+        <div style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-color); background: #f8fafc; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: var(--text-primary);">Student Roster &amp; Evaluation Overview</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">{{ students|length }} Student(s) Displayed</span>
+        </div>
+        <div class="table-responsive" style="overflow-x: auto;">
+            <table class="data-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem;">
+                <thead style="background-color: #f8fafc; border-bottom: 1px solid var(--border-color); color: var(--text-secondary);">
+                    <tr>
+                        <th style="padding: 12px 14px; font-weight: 600;">Student name</th>
+                        <th style="padding: 12px 14px; font-weight: 600;">Registration number</th>
+                        <th style="padding: 12px 14px; font-weight: 600;">Email</th>
+                        <th style="padding: 12px 14px; font-weight: 600;">Department</th>
+                        <th style="padding: 12px 14px; font-weight: 600;">Semester</th>
+                        <th style="padding: 12px 14px; font-weight: 600; text-align: center;">Total exams attempted</th>
+                        <th style="padding: 12px 14px; font-weight: 600; text-align: center;">Average percentage</th>
+                        <th style="padding: 12px 14px; font-weight: 600; text-align: center;">Overall performance</th>
+                        <th style="padding: 12px 14px; font-weight: 600; text-align: center;">Account status</th>
+                        <th style="padding: 12px 14px; font-weight: 600; text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in students %}
+                    <tr style="border-bottom: 1px solid var(--border-color); transition: background-color 0.15s ease;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='transparent'">
+                        <!-- 1. Student name -->
+                        <td style="padding: 14px; min-width: 180px;">
+                            <div style="font-weight: 700; color: var(--text-primary);">
+                                <a href="{{ url_for('admin.student_profile', student_id=s.student_id) }}" style="color: inherit; text-decoration: none;" title="View student profile">
+                                    {{ s.name }}
+                                </a>
+                            </div>
+                            <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">
+                                Joined {{ s.created_at[:10] if s.created_at else 'Recent' }}
+                            </div>
+                        </td>
+
+                        <!-- 2. Registration number (USN) -->
+                        <td style="padding: 14px; white-space: nowrap; font-family: monospace; font-weight: 600; color: #1e293b;">
+                            {{ s.usn }}
+                        </td>
+
+                        <!-- 3. Email -->
+                        <td style="padding: 14px; font-size: 0.8rem; color: var(--text-secondary);">
+                            {{ s.email }}
+                        </td>
+
+                        <!-- 4. Department -->
+                        <td style="padding: 14px; white-space: nowrap; font-size: 0.8rem; color: var(--text-secondary);">
+                            {{ s.department }}
+                        </td>
+
+                        <!-- 5. Semester -->
+                        <td style="padding: 14px; white-space: nowrap; font-size: 0.8rem; color: var(--text-secondary);">
+                            {{ s.semester }}
+                        </td>
+
+                        <!-- 6. Total examinations attempted -->
+                        <td style="padding: 14px; text-align: center;">
+                            <span class="badge badge-neutral" style="padding: 4px 10px; border-radius: 999px; font-weight: 700; font-size: 0.8rem; background: #f1f5f9; color: #334155;">
+                                {{ s.total_attempts }}
+                            </span>
+                        </td>
+
+                        <!-- 7. Average percentage -->
+                        <td style="padding: 14px; text-align: center; font-weight: 700;">
+                            {% if s.avg_percentage is not none %}
+                                <span style="color: {% if s.avg_percentage >= 75 %}#059669{% elif s.avg_percentage >= 50 %}var(--primary){% else %}#dc2626{% endif %};">
+                                    {{ s.avg_percentage }}%
+                                </span>
+                            {% else %}
+                                <span style="color: var(--text-muted); font-size: 0.8rem;">-</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- 8. Overall performance -->
+                        <td style="padding: 14px; text-align: center; white-space: nowrap;">
+                            {% if s.overall_performance == 'Excellent' %}
+                            <span class="status-pill pill-success" style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-size: 0.75rem;">
+                                &#9733; Excellent
+                            </span>
+                            {% elif s.overall_performance == 'Good' %}
+                            <span class="status-pill pill-primary" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; font-size: 0.75rem;">
+                                Good
+                            </span>
+                            {% elif s.overall_performance == 'Average' %}
+                            <span class="status-pill pill-warning" style="background: #fffbeb; color: #92400e; border: 1px solid #fde68a; font-size: 0.75rem;">
+                                Average
+                            </span>
+                            {% elif s.overall_performance == 'Needs Improvement' %}
+                            <span class="status-pill" style="background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; font-size: 0.75rem;">
+                                Needs Imp.
+                            </span>
+                            {% else %}
+                            <span class="status-pill pill-neutral" style="background: #f1f5f9; color: #64748b; font-size: 0.75rem;">
+                                No Attempts
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- 9. Account status -->
+                        <td style="padding: 14px; text-align: center; white-space: nowrap;">
+                            {% if s.account_status|lower == 'active' %}
+                            <span class="status-pill pill-success" style="background: #ecfdf5; color: #065f46; font-size: 0.75rem; border: 1px solid #a7f3d0;">
+                                <span style="width: 6px; height: 6px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+                                Active
+                            </span>
+                            {% else %}
+                            <span class="status-pill pill-neutral" style="background: #f1f5f9; color: #64748b; font-size: 0.75rem;">
+                                {{ s.account_status|title }}
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- 10. Actions -->
+                        <td style="padding: 14px; text-align: right; white-space: nowrap;">
+                            <a href="{{ url_for('admin.student_profile', student_id=s.student_id) }}" class="btn-table-action" style="padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: white; color: var(--primary); text-decoration: none; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                                <span>Profile &amp; Analytics &rarr;</span>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="10" style="padding: 48px; text-align: center; color: var(--text-muted);">
+                            <div style="font-size: 2rem; margin-bottom: 8px;">&#128100;</div>
+                            <h3 style="margin: 0 0 6px; color: var(--text-primary); font-size: 1.1rem;">No student records found</h3>
+                            <p style="margin: 0; font-size: 0.875rem;">Try adjusting search keywords or changing the department and semester filters.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

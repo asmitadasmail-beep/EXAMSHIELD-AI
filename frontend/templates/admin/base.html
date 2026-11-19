@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ page_title }} | ExamShield Admin</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f5f7fb;
+            color: #1f2937;
+        }
+        .admin-shell {
+            display: grid;
+            grid-template-columns: 240px minmax(0, 1fr);
+            min-height: 100vh;
+        }
+        .sidebar {
+            background: #111827;
+            color: #ecf3ff;
+            padding: 1.5rem 1rem;
+        }
+        .brand-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 2rem;
+        }
+        .brand-mark {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #3b82f6, #22c55e);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+        .sidebar nav {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .sidebar a {
+            color: #dbeafe;
+            text-decoration: none;
+            padding: 0.85rem 0.9rem;
+            border-radius: 10px;
+            display: block;
+        }
+        .sidebar a.active,
+        .sidebar a:hover {
+            background: rgba(255,255,255,0.08);
+        }
+        .sidebar button {
+            width: 100%;
+            border: 0;
+            background: transparent;
+            color: #dbeafe;
+            text-align: left;
+            font: inherit;
+            padding: 0.85rem 0.9rem;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        .sidebar button:hover {
+            background: rgba(255,255,255,0.08);
+        }
+        .main-pane {
+            padding: 1.5rem;
+        }
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0;
+        }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .chip {
+            background: #edf2ff;
+            color: #1d4ed8;
+            border-radius: 999px;
+            padding: 0.35rem 0.7rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .content-panel {
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            padding: 1.5rem;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.04);
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #ffffff, #f8fbff);
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 1rem;
+        }
+        .stat-card .label {
+            color: #6b7280;
+            font-size: 0.82rem;
+        }
+        .stat-card .value {
+            margin-top: 0.6rem;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        .table-grid {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        th, td {
+            text-align: left;
+            padding: 0.85rem 0.75rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        th {
+            background: #f8fafc;
+            color: #475569;
+        }
+        .primary-button, .secondary-button {
+            display: inline-block;
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem 1.1rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .primary-button {
+            background: #2563eb;
+            color: white;
+        }
+        .secondary-button {
+            background: #eef2ff;
+            color: #1e40af;
+        }
+        form label {
+            display: block;
+            margin-bottom: 0.85rem;
+            font-weight: 600;
+        }
+        form input, form select, form textarea {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 0.7rem 0.8rem;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+            margin-top: 0.35rem;
+            font: inherit;
+        }
+        .error-box {
+            background: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+            padding: 0.85rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        .auth-page {
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(135deg, #eff6ff, #e2e8f0);
+        }
+        .auth-card {
+            width: min(420px, 92vw);
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 18px 45px rgba(15,23,42,0.10);
+        }
+        .auth-brand {
+            font-weight: 700;
+            margin-bottom: 1.25rem;
+        }
+        .eyebrow {
+            margin: 0 0 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: #3b82f6;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+        .auth-card h1 {
+            margin: 0 0 1rem;
+            font-size: 2rem;
+        }
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .message {
+            color: #4b5563;
+            margin: 1rem 0 0;
+        }
+        @media (max-width: 760px) {
+            .admin-shell {
+                grid-template-columns: 1fr;
+            }
+            .sidebar nav {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            }
+            .main-pane {
+                padding: 1rem;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="admin-body">
+    {% block body %}{% endblock %}
+</body>
+</html>

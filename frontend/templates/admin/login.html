@@ -1,0 +1,30 @@
+{% extends "admin/base.html" %}
+{% block body %}
+<div class="auth-page">
+    <main class="auth-card">
+        <div class="auth-brand">
+            <div class="brand-mark">E</div>
+            <div>ExamShield AI</div>
+        </div>
+        <p class="eyebrow">Teacher &amp; Admin Portal</p>
+        <h1>Secure access</h1>
+        {% if error %}
+        <div class="error-box" role="alert">{{ error }}</div>
+        {% endif %}
+        <form class="auth-form" method="post">
+            <input type="hidden" name="csrf_token" value="{{ admin_csrf_token() }}">
+            <label>
+                Email
+                <input type="email" name="email" autocomplete="username" required placeholder="name@institution.edu">
+            </label>
+            <label>
+                Password
+                <input type="password" name="password" autocomplete="current-password" required placeholder="Enter password">
+            </label>
+            <button type="submit" class="primary-button">Sign in</button>
+        </form>
+        <p class="message">Sign in with an account provisioned by your Super Admin.</p>
+        <p class="message">Student taking an exam? <a href="{{ url_for('auth.account_login') }}">Go to student portal</a></p>
+    </main>
+</div>
+{% endblock %}

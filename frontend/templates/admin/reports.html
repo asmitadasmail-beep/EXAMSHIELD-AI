@@ -1,0 +1,1376 @@
+{% extends "admin/layout.html" %}
+{% set active_tab = "reports" %}
+
+{% block heading %}Student Performance Analytics &amp; Institutional Reports{% endblock %}
+
+{% block admin_content %}
+{% set q_params = [] %}
+{% if active_filters.subject_id %}{% set _ = q_params.append('subject_id=' ~ active_filters.subject_id) %}{% endif %}
+{% if active_filters.exam_id %}{% set _ = q_params.append('exam_id=' ~ active_filters.exam_id) %}{% endif %}
+{% if active_filters.department %}{% set _ = q_params.append('department=' ~ active_filters.department|urlencode) %}{% endif %}
+{% if active_filters.semester %}{% set _ = q_params.append('semester=' ~ active_filters.semester|urlencode) %}{% endif %}
+{% if active_filters.academic_year %}{% set _ = q_params.append('academic_year=' ~ active_filters.academic_year|urlencode) %}{% endif %}
+{% if active_filters.student_id %}{% set _ = q_params.append('student_id=' ~ active_filters.student_id) %}{% endif %}
+{% set qs = ('?' ~ q_params|join('&')) if q_params else '' %}
+
+<div class="reports-shell">
+    <!-- Reports Header Banner with Export Actions (PART 6) -->
+    <div class="reports-header-banner" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04); flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h2 style="margin: 0; font-size: 1.35rem; color: #1e3a8a; font-weight: 800;">Academic Performance &amp; Evaluation Analytics</h2>
+            <p style="margin: 4px 0 0 0; font-size: 0.85rem; color: #64748b;">Comprehensive multi-cohort diagnostic reporting, score distributions, and institutional audit exports</p>
+        </div>
+        <div class="header-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <a href="{{ url_for('admin.export_reports', format_type='pdf') }}{{ qs }}" class="btn-action-export btn-pdf" id="btnExportPdf" title="Download Institutional PDF Report">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                <span>Export PDF</span>
+            </a>
+            <a href="{{ url_for('admin.export_reports', format_type='xlsx') }}{{ qs }}" class="btn-action-export btn-excel" id="btnExportExcel" title="Download Formatted Excel (XLSX) Workbook">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="17"/><line x1="16" y1="13" x2="8" y2="17"/></svg>
+                <span>Export Excel</span>
+            </a>
+            <a href="{{ url_for('admin.export_reports', format_type='csv') }}{{ qs }}" class="btn-action-export btn-csv" id="btnExportCsv" title="Download Raw Performance CSV">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span>Export CSV</span>
+            </a>
+        </div>
+    </div>
+    {% if error %}
+    <div class="alert-box alert-error" style="margin-bottom: 1.5rem; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 1rem 1.25rem; border-radius: 8px; display: flex; align-items: center; gap: 10px;">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div>
+            <strong>Access Warning:</strong> {{ error }}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Filter & Scope Toolbar (PART 5) -->
+    <section class="content-panel filter-panel" aria-label="Performance filters">
+        <div class="filter-panel-header">
+            <div class="filter-panel-title">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                <span>Report Filter &amp; Scope Controls</span>
+            </div>
+            {% if active_filters.subject_id or active_filters.exam_id or active_filters.department or active_filters.semester or active_filters.academic_year or active_filters.student_id %}
+            <span class="active-filter-badge">Active Filters Applied</span>
+            {% endif %}
+        </div>
+
+        <form id="reportsFilterForm" method="get" action="{{ url_for('admin.reports') }}" class="filters-grid">
+            <!-- Subject Filter -->
+            <div class="filter-field">
+                <label for="filterSubject">Subject</label>
+                <select name="subject_id" id="filterSubject" class="form-select">
+                    <option value="">All Subjects</option>
+                    {% for subj in filter_options.subjects %}
+                    <option value="{{ subj.subject_id }}" {% if active_filters.subject_id == subj.subject_id %}selected{% endif %}>{{ subj.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Examination Filter -->
+            <div class="filter-field">
+                <label for="filterExam">Examination</label>
+                <select name="exam_id" id="filterExam" class="form-select">
+                    <option value="">All Examinations</option>
+                    {% for ex in filter_options.exams %}
+                    <option value="{{ ex.exam_id }}" {% if active_filters.exam_id == ex.exam_id %}selected{% endif %}>{{ ex.name }} ({{ ex.subject_name }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Department Filter -->
+            <div class="filter-field">
+                <label for="filterDepartment">Department</label>
+                <select name="department" id="filterDepartment" class="form-select">
+                    <option value="">All Departments</option>
+                    {% for dept in filter_options.departments %}
+                    <option value="{{ dept }}" {% if active_filters.department == dept %}selected{% endif %}>{{ dept }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Semester Filter -->
+            <div class="filter-field">
+                <label for="filterSemester">Semester</label>
+                <select name="semester" id="filterSemester" class="form-select">
+                    <option value="">All Semesters</option>
+                    {% for sem in filter_options.semesters %}
+                    <option value="{{ sem }}" {% if active_filters.semester == sem %}selected{% endif %}>{{ sem }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Academic Year Filter -->
+            <div class="filter-field">
+                <label for="filterAcademicYear">Academic Year</label>
+                <select name="academic_year" id="filterAcademicYear" class="form-select">
+                    <option value="">All Academic Years</option>
+                    {% for yr in filter_options.academic_years %}
+                    <option value="{{ yr }}" {% if active_filters.academic_year == yr %}selected{% endif %}>{{ yr }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Student Filter -->
+            <div class="filter-field">
+                <label for="filterStudent">Individual Student</label>
+                <select name="student_id" id="filterStudent" class="form-select">
+                    <option value="">All Students</option>
+                    {% for st in filter_options.students %}
+                    <option value="{{ st.student_id }}" {% if active_filters.student_id == st.student_id %}selected{% endif %}>{{ st.full_name }} ({{ st.usn }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Submit & Reset Actions -->
+            <div class="filter-actions-group">
+                <button type="submit" class="btn-filter-apply" id="btnApplyFilters">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                    Apply Filters
+                </button>
+                <a href="{{ url_for('admin.reports') }}" class="btn-filter-reset" id="btnResetFilters">Reset</a>
+            </div>
+        </form>
+    </section>
+
+    <!-- Executive KPI Statistics Cards (PART 1 & PART 3) -->
+    <div class="overview-kpi-grid">
+        <!-- Total Enrolled -->
+        <article class="kpi-card">
+            <div class="kpi-top">
+                <span class="kpi-label">Total Enrolled</span>
+                <div class="kpi-icon icon-blue">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+            </div>
+            <div class="kpi-value" id="kpiTotalEnrolled">{{ analytics.overview.total_enrolled|default(0) }}</div>
+            <span class="kpi-sub">Registered eligible candidates</span>
+        </article>
+
+        <!-- Attempted vs Unattempted -->
+        <article class="kpi-card">
+            <div class="kpi-top">
+                <span class="kpi-label">Attempted vs Unattempted</span>
+                <div class="kpi-icon icon-indigo">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                </div>
+            </div>
+            <div class="kpi-value">
+                <span style="color: #2563eb;" id="kpiAttempted">{{ analytics.overview.students_attempted|default(0) }}</span>
+                <span style="font-size: 1.1rem; color: #94a3b8; font-weight: 500;">/</span>
+                <span style="color: #64748b;" id="kpiUnattempted">{{ analytics.overview.unattempted_students|default(0) }}</span>
+            </div>
+            <span class="kpi-sub">{{ analytics.overview.students_attempted|default(0) }} attempted, {{ analytics.overview.unattempted_students|default(0) }} unattempted</span>
+        </article>
+
+        <!-- Average Score & Marks -->
+        <article class="kpi-card">
+            <div class="kpi-top">
+                <span class="kpi-label">Average Performance</span>
+                <div class="kpi-icon icon-purple">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                </div>
+            </div>
+            <div class="kpi-value" style="color: #7c3aed;" id="kpiAveragePct">{{ analytics.overview.average_percentage|default(0.0) }}%</div>
+            <span class="kpi-sub">Mean score: <strong>{{ analytics.overview.average_marks|default(0.0) }}</strong> marks</span>
+        </article>
+
+        <!-- Pass vs Fail Percentage -->
+        <article class="kpi-card">
+            <div class="kpi-top">
+                <span class="kpi-label">Pass / Failure Rate</span>
+                <div class="kpi-icon icon-green">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                </div>
+            </div>
+            <div class="kpi-value">
+                <span style="color: #10b981;" id="kpiPassPct">{{ analytics.overview.pass_percentage|default(0.0) }}%</span>
+                <span style="font-size: 1.1rem; color: #94a3b8; font-weight: 500;">/</span>
+                <span style="color: #ef4444;" id="kpiFailPct">{{ analytics.overview.failure_percentage|default(0.0) }}%</span>
+            </div>
+            <span class="kpi-sub">{{ analytics.overview.pass_count|default(0) }} passed, {{ analytics.overview.fail_count|default(0) }} failed</span>
+        </article>
+
+        <!-- Highest & Lowest Marks -->
+        <article class="kpi-card">
+            <div class="kpi-top">
+                <span class="kpi-label">Highest &amp; Lowest Marks</span>
+                <div class="kpi-icon icon-amber">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                </div>
+            </div>
+            <div class="kpi-value">
+                <span style="color: #059669;" id="kpiHighMarks">{{ analytics.overview.highest_marks|default(0.0) }}</span>
+                <span style="font-size: 1.1rem; color: #94a3b8; font-weight: 500;">/</span>
+                <span style="color: #e11d48;" id="kpiLowMarks">{{ analytics.overview.lowest_marks|default(0.0) }}</span>
+            </div>
+            <span class="kpi-sub">Maximum and minimum marks recorded</span>
+        </article>
+    </div>
+
+    <!-- Visualisations Grid (PART 4) -->
+    <div class="charts-master-grid">
+        <!-- Chart 1: Subject-Wise Performance (Bar Chart) -->
+        <section class="chart-panel" aria-labelledby="subjectPerfTitle">
+            <div class="chart-header">
+                <div>
+                    <h3 id="subjectPerfTitle">Subject-Wise Performance</h3>
+                    <p>Average marks and passing ratios across academic disciplines</p>
+                </div>
+                <span class="badge-chip chip-blue">{{ analytics.subject_performance|length }} Subjects</span>
+            </div>
+            <div class="chart-body">
+                {% if analytics.subject_performance and analytics.subject_performance|length > 0 %}
+                <div class="bar-chart-container">
+                    <svg viewBox="0 0 500 210" preserveAspectRatio="none" class="chart-svg" aria-label="Subject performance bar chart">
+                        <!-- Grid Lines -->
+                        <line x1="40" y1="20" x2="490" y2="20" stroke="#f1f5f9" stroke-width="1"/>
+                        <text x="8" y="24" font-size="10" fill="#94a3b8">100%</text>
+                        <line x1="40" y1="75" x2="490" y2="75" stroke="#f1f5f9" stroke-width="1"/>
+                        <text x="14" y="79" font-size="10" fill="#94a3b8">60%</text>
+                        <line x1="40" y1="130" x2="490" y2="130" stroke="#f1f5f9" stroke-width="1"/>
+                        <text x="14" y="134" font-size="10" fill="#94a3b8">20%</text>
+                        <line x1="40" y1="160" x2="490" y2="160" stroke="#cbd5e1" stroke-width="1.5"/>
+
+                        {% set s_count = analytics.subject_performance|length %}
+                        {% set col_width = 38 %}
+                        {% set total_space = 430 %}
+                        {% set slot_w = (total_space / s_count) if s_count > 0 else 1 %}
+
+                        {% for subj in analytics.subject_performance %}
+                            {% set cx = 50 + (loop.index0 * slot_w) + (slot_w / 2) - (col_width / 2) %}
+                            {% set bar_pct = (subj.average_percentage|default(subj.avg_percentage|default(0.0)))|float %}
+                            {% set bar_h = (bar_pct / 100.0 * 140)|round(1) %}
+                            {% set bar_y = 160 - bar_h %}
+
+                            <!-- Bar Column -->
+                            <rect x="{{ cx }}" y="{{ bar_y }}" width="{{ col_width }}" height="{{ bar_h }}" rx="4" fill="url(#barGradient)" class="svg-bar">
+                                <title>{{ subj.subject_name|default('Subject') }}: {{ bar_pct }}% (Avg: {{ subj.average_marks|default(subj.avg_marks|default(0.0)) }} marks)</title>
+                            </rect>
+                            <!-- Score Value on Top -->
+                            <text x="{{ cx + (col_width / 2) }}" y="{{ bar_y - 5 }}" font-size="10" font-weight="700" fill="#1e3a8a" text-anchor="middle">
+                                {{ bar_pct }}%
+                            </text>
+                            <!-- Label under axis -->
+                            <text x="{{ cx + (col_width / 2) }}" y="178" font-size="9" fill="#475569" text-anchor="middle" font-weight="600">
+                                {{ (subj.subject_name|default('Subject'))[:9] }}{% if (subj.subject_name|default('Subject'))|length > 9 %}..{% endif %}
+                            </text>
+                            <text x="{{ cx + (col_width / 2) }}" y="193" font-size="8" fill="#94a3b8" text-anchor="middle">
+                                {{ subj.pass_rate|default(subj.pass_percentage|default(0.0)) }}% Pass
+                            </text>
+                        {% endfor %}
+
+                        <defs>
+                            <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#3b82f6"/>
+                                <stop offset="100%" stop-color="#1d4ed8"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                {% else %}
+                <div class="chart-empty-state">
+                    <p>No subject performance data available for current filter selection.</p>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <!-- Chart 2: Performance Progression (Line Chart) -->
+        <section class="chart-panel" aria-labelledby="progressionTitle">
+            <div class="chart-header">
+                <div>
+                    <h3 id="progressionTitle">Performance Progression</h3>
+                    <p>Historical evaluation trends across examination attempts</p>
+                </div>
+                <span class="badge-chip chip-purple">Chronological Trend</span>
+            </div>
+            <div class="chart-body">
+                {% if analytics.performance_trends and analytics.performance_trends|length > 0 %}
+                <div class="line-chart-container">
+                    <svg viewBox="0 0 500 210" preserveAspectRatio="none" class="chart-svg" aria-label="Performance progression trend line chart">
+                        <!-- Horizontal Grid Lines -->
+                        <line x1="40" y1="20" x2="490" y2="20" stroke="#f1f5f9" stroke-dasharray="3,3" stroke-width="1"/>
+                        <text x="8" y="24" font-size="10" fill="#94a3b8">100%</text>
+                        <line x1="40" y1="67" x2="490" y2="67" stroke="#f1f5f9" stroke-dasharray="3,3" stroke-width="1"/>
+                        <text x="14" y="71" font-size="10" fill="#94a3b8">75%</text>
+                        <line x1="40" y1="114" x2="490" y2="114" stroke="#f1f5f9" stroke-dasharray="3,3" stroke-width="1"/>
+                        <text x="14" y="118" font-size="10" fill="#94a3b8">50%</text>
+                        <line x1="40" y1="160" x2="490" y2="160" stroke="#cbd5e1" stroke-width="1.5"/>
+                        <text x="20" y="164" font-size="10" fill="#94a3b8">0%</text>
+
+                        {% set t_len = analytics.performance_trends|length %}
+                        {% set x_step = (440.0 / (t_len - 1)) if t_len > 1 else 220.0 %}
+
+                        <!-- Area Fill -->
+                        <polygon points="40,160
+                            {% for pt in analytics.performance_trends %}
+                                {% set pt_pct = (pt.percentage|default(pt.avg_percentage|default(0.0)))|float %}
+                                {% set px = 40 + (loop.index0 * x_step) %}
+                                {% set py = 160 - (pt_pct / 100.0 * 140) %}
+                                {{ px }},{{ py }}
+                            {% endfor %}
+                            {{ 40 + ((t_len - 1) * x_step) }},160" fill="url(#trendAreaGrad)" opacity="0.45"/>
+
+                        <!-- Polyline -->
+                        <polyline points="
+                            {% for pt in analytics.performance_trends %}
+                                {% set pt_pct = (pt.percentage|default(pt.avg_percentage|default(0.0)))|float %}
+                                {% set px = 40 + (loop.index0 * x_step) %}
+                                {% set py = 160 - (pt_pct / 100.0 * 140) %}
+                                {{ px }},{{ py }}
+                            {% endfor %}" fill="none" stroke="#7c3aed" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+                        <!-- Data Points -->
+                        {% for pt in analytics.performance_trends %}
+                            {% set pt_pct = (pt.percentage|default(pt.avg_percentage|default(0.0)))|float %}
+                            {% set px = 40 + (loop.index0 * x_step) %}
+                            {% set py = 160 - (pt_pct / 100.0 * 140) %}
+                            <circle cx="{{ px }}" cy="{{ py }}" r="4.5" fill="#ffffff" stroke="#7c3aed" stroke-width="2">
+                                <title>{{ pt.student_name|default('Student') }}: {{ pt_pct }}% ({{ pt.exam_name|default('Exam') }} - {{ pt.date|default('') }})</title>
+                            </circle>
+                            {% if loop.first or loop.last or (t_len <= 8 and loop.index % 2 == 1) %}
+                            <text x="{{ px }}" y="180" font-size="9" fill="#64748b" text-anchor="middle">{{ (pt.date|default(''))[5:] }}</text>
+                            {% endif %}
+                        {% endfor %}
+
+                        <defs>
+                            <linearGradient id="trendAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.6"/>
+                                <stop offset="100%" stop-color="#c4b5fd" stop-opacity="0.05"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                {% else %}
+                <div class="chart-empty-state">
+                    <p>No completed examination submissions to generate progression trend line.</p>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <!-- Chart 3: Pass / Fail Distribution (Doughnut / Pie Chart) -->
+        <section class="chart-panel" aria-labelledby="passFailTitle">
+            <div class="chart-header">
+                <div>
+                    <h3 id="passFailTitle">Pass / Fail Distribution</h3>
+                    <p>Cohort graduation and qualification benchmark</p>
+                </div>
+                <span class="badge-chip chip-green">{{ analytics.overview.pass_percentage|default(0.0) }}% Success</span>
+            </div>
+            <div class="chart-body" style="display: flex; align-items: center; justify-content: space-around; gap: 20px; flex-wrap: wrap;">
+                <div style="position: relative; width: 170px; height: 170px;">
+                    <svg viewBox="0 0 100 100" class="doughnut-svg" aria-label="Pass fail doughnut chart">
+                        {% set pass_val = analytics.overview.pass_percentage|default(0.0) %}
+                        {% set circumference = 251.32 %}
+                        {% set pass_stroke = (pass_val / 100.0 * circumference)|round(2) %}
+                        {% set fail_stroke = (circumference - pass_stroke)|round(2) %}
+
+                        <!-- Background Circle -->
+                        <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f1f5f9" stroke-width="14"/>
+                        <!-- Fail Segment (Base) -->
+                        <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f43f5e" stroke-width="14" stroke-dasharray="{{ circumference }}" stroke-dashoffset="0"/>
+                        <!-- Pass Segment (Top) -->
+                        <circle cx="50" cy="50" r="40" fill="transparent" stroke="#10b981" stroke-width="14" stroke-dasharray="{{ pass_stroke }} {{ fail_stroke }}" stroke-dashoffset="0" transform="rotate(-90 50 50)"/>
+                    </svg>
+                    <!-- Center Metric -->
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                        <span style="display: block; font-size: 1.35rem; font-weight: 800; color: #1e293b;">{{ analytics.overview.pass_percentage|default(0.0) }}%</span>
+                        <span style="font-size: 0.7rem; color: #64748b; font-weight: 600; text-transform: uppercase;">Pass Rate</span>
+                    </div>
+                </div>
+
+                <!-- Legend & Detailed Figures -->
+                <div class="doughnut-legend" style="display: flex; flex-direction: column; gap: 12px; min-width: 140px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="width: 14px; height: 14px; border-radius: 4px; background: #10b981; display: inline-block;"></span>
+                        <div>
+                            <div style="font-size: 0.85rem; font-weight: 700; color: #065f46;">Passed Candidates</div>
+                            <div style="font-size: 0.75rem; color: #64748b;"><strong>{{ analytics.overview.pass_count|default(0) }}</strong> students ({{ analytics.overview.pass_percentage|default(0.0) }}%)</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="width: 14px; height: 14px; border-radius: 4px; background: #f43f5e; display: inline-block;"></span>
+                        <div>
+                            <div style="font-size: 0.85rem; font-weight: 700; color: #9f1239;">Failed Candidates</div>
+                            <div style="font-size: 0.75rem; color: #64748b;"><strong>{{ analytics.overview.fail_count|default(0) }}</strong> students ({{ analytics.overview.failure_percentage|default(0.0) }}%)</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 6px; padding-top: 8px; border-top: 1px dashed #e2e8f0; font-size: 0.75rem; color: #64748b;">
+                        Total Evaluated: <strong>{{ analytics.overview.students_evaluated|default(0) }}</strong>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Chart 4: Score Distribution Histogram (5 Intervals) -->
+        <section class="chart-panel" aria-labelledby="histTitle">
+            <div class="chart-header">
+                <div>
+                    <h3 id="histTitle">Score Distribution Histogram</h3>
+                    <p>Frequency distribution across standard 20% mark intervals</p>
+                </div>
+                <span class="badge-chip chip-amber">Histogram</span>
+            </div>
+            <div class="chart-body">
+                {% set dist = analytics.score_distribution or {} %}
+                {% set max_freq = [dist.get('0-20%', 0), dist.get('21-40%', 0), dist.get('41-60%', 0), dist.get('61-80%', 0), dist.get('81-100%', 0)]|max %}
+                {% set max_scale = max_freq if max_freq > 0 else 1 %}
+
+                <div class="histogram-bars-container">
+                    <svg viewBox="0 0 500 200" preserveAspectRatio="none" class="chart-svg" aria-label="Score distribution histogram chart">
+                        <!-- Horizontal Axis -->
+                        <line x1="30" y1="150" x2="480" y2="150" stroke="#cbd5e1" stroke-width="1.5"/>
+
+                        {% set intervals = [
+                            ('0-20%', dist.get('0-20%', 0), '#ef4444'),
+                            ('21-40%', dist.get('21-40%', 0), '#f97316'),
+                            ('41-60%', dist.get('41-60%', 0), '#f59e0b'),
+                            ('61-80%', dist.get('61-80%', 0), '#3b82f6'),
+                            ('81-100%', dist.get('81-100%', 0), '#10b981')
+                        ] %}
+
+                        {% for label, cnt, color in intervals %}
+                            {% set col_x = 50 + (loop.index0 * 85) %}
+                            {% set bar_height = (cnt / max_scale * 115)|round(1) %}
+                            {% set col_y = 150 - bar_height %}
+
+                            <!-- Bar Column -->
+                            <rect x="{{ col_x }}" y="{{ col_y }}" width="55" height="{{ bar_height }}" rx="4" fill="{{ color }}" opacity="0.88">
+                                <title>{{ label }}: {{ cnt }} candidate(s)</title>
+                            </rect>
+                            <!-- Frequency text on top -->
+                            <text x="{{ col_x + 27.5 }}" y="{{ col_y - 6 }}" font-size="11" font-weight="700" fill="#334155" text-anchor="middle">
+                                {{ cnt }}
+                            </text>
+                            <!-- X Axis Label -->
+                            <text x="{{ col_x + 27.5 }}" y="170" font-size="10" font-weight="600" fill="#475569" text-anchor="middle">
+                                {{ label }}
+                            </text>
+                        {% endfor %}
+                    </svg>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Chart 5: Question-Wise Accuracy & Difficulty (Horizontal Bar Chart) (PART 1 & PART 4) -->
+    <section class="content-panel question-accuracy-panel" aria-labelledby="qAccuracyTitle" style="margin-bottom: 2rem;">
+        <div class="panel-header-custom">
+            <div>
+                <h3 id="qAccuracyTitle" style="margin: 0; font-size: 1.15rem; color: #1e3a8a;">Question-Wise Accuracy &amp; Difficulty Rating</h3>
+                <p style="margin: 4px 0 0 0; font-size: 0.85rem; color: #64748b;">Diagnostic question performance, difficulty levels and topic mastery</p>
+            </div>
+            <span class="badge-chip chip-blue">{{ analytics.question_accuracy|length }} Questions Analyzed</span>
+        </div>
+
+        {% if analytics.question_accuracy and analytics.question_accuracy|length > 0 %}
+        <div class="accuracy-bars-stack">
+            {% for q in analytics.question_accuracy %}
+            <div class="accuracy-bar-item">
+                <div class="q-meta-top">
+                    <div class="q-statement-line">
+                        <span class="q-num-pill">Q{{ loop.index }}</span>
+                        <span class="q-text" title="{{ q.statement|default('') }}">{{ q.statement|default('') }}</span>
+                    </div>
+                    <div class="q-tags-group">
+                        <span class="q-topic-tag">{{ q.topic|default('General') }}</span>
+                        <span class="difficulty-pill pill-{{ (q.difficulty|default('medium'))|lower }}">{{ q.difficulty|default('Medium') }}</span>
+                        <span class="q-marks-tag">{{ q.marks|default(0) }} Marks</span>
+                    </div>
+                </div>
+
+                <div class="accuracy-progress-row">
+                    {% set q_acc = (q.accuracy|default(0.0))|float %}
+                    {% set bar_color = '#10b981' if q_acc >= 70.0 else ('#f59e0b' if q_acc >= 40.0 else '#ef4444') %}
+                    <div class="accuracy-track" title="Accuracy: {{ q_acc }}% ({{ q.correct_count|default(0) }} correct, {{ q.incorrect_count|default(0) }} incorrect, {{ q.unanswered_count|default(0) }} unanswered)">
+                        <div class="accuracy-fill" style="width: {{ q_acc }}%; background: {{ bar_color }};"></div>
+                    </div>
+                    <div class="accuracy-score-box">
+                        <strong style="color: {{ bar_color }};">{{ q_acc }}%</strong>
+                        <span class="accuracy-counts">({{ q.correct_count|default(0) }}/{{ q.total_candidates|default(0) }} correct)</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="chart-empty-state">
+            <p>No question accuracy metrics available. Ensure examinations have questions and submitted attempts.</p>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- Question Mastery: Easiest & Most Difficult Questions (PART 1) -->
+    <div class="mastery-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        <!-- Top 5 Easiest Questions -->
+        <section class="content-panel mastery-panel" aria-labelledby="easiestQTitle">
+            <div class="mastery-panel-header" style="border-bottom: 2px solid #10b981; padding-bottom: 0.75rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="background: #d1fae5; color: #065f46; width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 700;">✓</div>
+                    <h4 id="easiestQTitle" style="margin: 0; color: #065f46; font-size: 1rem;">Easiest Questions (Highest Accuracy)</h4>
+                </div>
+                <span class="badge-chip chip-green">Top 5</span>
+            </div>
+            {% if analytics.easiest_questions and analytics.easiest_questions|length > 0 %}
+            <div class="mastery-list">
+                {% for q in analytics.easiest_questions %}
+                <div class="mastery-card-item">
+                    <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;">
+                        <span style="font-size: 0.85rem; font-weight: 600; color: #1e293b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ q.statement|default('') }}</span>
+                        <span style="font-size: 0.9rem; font-weight: 800; color: #059669; white-space: nowrap;">{{ q.accuracy|default(0.0) }}%</span>
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-top: 4px; font-size: 0.75rem; color: #64748b;">
+                        <span>Topic: <strong>{{ q.topic|default('General') }}</strong></span>
+                        <span>•</span>
+                        <span>Marks: <strong>{{ q.marks|default(0) }}</strong></span>
+                        <span>•</span>
+                        <span>Difficulty: <strong>{{ q.difficulty|default('Medium') }}</strong></span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p style="font-size: 0.85rem; color: #94a3b8; margin: 0;">No question records found.</p>
+            {% endif %}
+        </section>
+
+        <!-- Top 5 Most Difficult Questions -->
+        <section class="content-panel mastery-panel" aria-labelledby="hardestQTitle">
+            <div class="mastery-panel-header" style="border-bottom: 2px solid #ef4444; padding-bottom: 0.75rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="background: #fee2e2; color: #991b1b; width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 700;">!</div>
+                    <h4 id="hardestQTitle" style="margin: 0; color: #991b1b; font-size: 1rem;">Most Difficult Questions (Lowest Accuracy)</h4>
+                </div>
+                <span class="badge-chip chip-red">Needs Attention</span>
+            </div>
+            {% if analytics.most_difficult_questions and analytics.most_difficult_questions|length > 0 %}
+            <div class="mastery-list">
+                {% for q in analytics.most_difficult_questions %}
+                <div class="mastery-card-item">
+                    <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;">
+                        <span style="font-size: 0.85rem; font-weight: 600; color: #1e293b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ q.statement|default('') }}</span>
+                        <span style="font-size: 0.9rem; font-weight: 800; color: #dc2626; white-space: nowrap;">{{ q.accuracy|default(0.0) }}%</span>
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-top: 4px; font-size: 0.75rem; color: #64748b;">
+                        <span>Topic: <strong>{{ q.topic|default('General') }}</strong></span>
+                        <span>•</span>
+                        <span>Marks: <strong>{{ q.marks|default(0) }}</strong></span>
+                        <span>•</span>
+                        <span>Difficulty: <strong>{{ q.difficulty|default('Medium') }}</strong></span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p style="font-size: 0.85rem; color: #94a3b8; margin: 0;">No question records found.</p>
+            {% endif %}
+        </section>
+    </div>
+
+    <!-- Examination-Level Comparisons Table (PART 1 & PART 3) -->
+    <section class="content-panel" aria-labelledby="examCompTitle" style="margin-bottom: 2rem;">
+        <div class="panel-header-custom">
+            <div>
+                <h3 id="examCompTitle" style="margin: 0; font-size: 1.15rem; color: #1e3a8a;">Examination-Level Analytics &amp; Comparisons</h3>
+                <p style="margin: 4px 0 0 0; font-size: 0.85rem; color: #64748b;">Comprehensive breakdown of candidate attendance, averages, and score boundaries</p>
+            </div>
+            <span class="badge-chip chip-indigo">{{ analytics.exam_analytics|length }} Examinations</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table" id="examsAnalyticsTable">
+                <thead>
+                    <tr>
+                        <th>Examination Name</th>
+                        <th>Subject</th>
+                        <th>Department &amp; Sem</th>
+                        <th style="text-align: center;">Enrolled</th>
+                        <th style="text-align: center;">Attempted</th>
+                        <th style="text-align: center;">Unattempted</th>
+                        <th style="text-align: center;">Average Marks</th>
+                        <th style="text-align: center;">Pass %</th>
+                        <th style="text-align: center;">High / Low</th>
+                        <th style="text-align: center;">Score Distribution</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ex in analytics.exam_analytics %}
+                    <tr>
+                        <td>
+                            <strong style="color: #1e3a8a;">{{ ex.name|default(ex.exam_name|default('Exam')) }}</strong>
+                            <div style="font-size: 0.75rem; color: #64748b;">Pass marks: {{ ex.pass_marks|default(0) }} / {{ ex.max_marks|default(100) }}</div>
+                        </td>
+                        <td><span class="badge-chip chip-blue">{{ ex.subject_name|default('General') }}</span></td>
+                        <td>
+                            <div style="font-size: 0.8rem; font-weight: 600;">{{ ex.department|default('N/A') }}</div>
+                            <div style="font-size: 0.75rem; color: #64748b;">{{ ex.semester|default('-') }}</div>
+                        </td>
+                        <td style="text-align: center; font-weight: 700;">{{ ex.enrolled_count|default(0) }}</td>
+                        <td style="text-align: center; font-weight: 700; color: #2563eb;">{{ ex.attempted_count|default(0) }}</td>
+                        <td style="text-align: center; font-weight: 600; color: #64748b;">{{ ex.unattempted_count|default(0) }}</td>
+                        <td style="text-align: center;">
+                            <strong>{{ ex.average_marks|default(ex.avg_marks|default(0.0)) }}</strong>
+                            <div style="font-size: 0.75rem; color: #7c3aed;">({{ ex.average_percentage|default(ex.avg_percentage|default(0.0)) }}%)</div>
+                        </td>
+                        <td style="text-align: center;">
+                            <span class="status-pill {% if (ex.pass_percentage|default(ex.pass_rate|default(0.0))) >= 50.0 %}pill-green{% else %}pill-red{% endif %}">
+                                {{ ex.pass_percentage|default(ex.pass_rate|default(0.0)) }}%
+                            </span>
+                        </td>
+                        <td style="text-align: center; font-size: 0.85rem;">
+                            <span style="color: #059669; font-weight: 700;">{{ ex.highest_marks|default(ex.highest_score|default(0.0)) }}</span> / <span style="color: #dc2626; font-weight: 700;">{{ ex.lowest_marks|default(ex.lowest_score|default(0.0)) }}</span>
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 4px; align-items: flex-end; height: 28px; justify-content: center;" title="0-20%, 21-40%, 41-60%, 61-80%, 81-100%">
+                                {% set e_dist = ex.score_distribution or {} %}
+                                <span style="width: 8px; height: {{ [e_dist.get('0-20%', 0) * 8, 4]|max }}px; background: #ef4444; border-radius: 1px;" title="0-20%: {{ e_dist.get('0-20%', 0) }}"></span>
+                                <span style="width: 8px; height: {{ [e_dist.get('21-40%', 0) * 8, 4]|max }}px; background: #f97316; border-radius: 1px;" title="21-40%: {{ e_dist.get('21-40%', 0) }}"></span>
+                                <span style="width: 8px; height: {{ [e_dist.get('41-60%', 0) * 8, 4]|max }}px; background: #f59e0b; border-radius: 1px;" title="41-60%: {{ e_dist.get('41-60%', 0) }}"></span>
+                                <span style="width: 8px; height: {{ [e_dist.get('61-80%', 0) * 8, 4]|max }}px; background: #3b82f6; border-radius: 1px;" title="61-80%: {{ e_dist.get('61-80%', 0) }}"></span>
+                                <span style="width: 8px; height: {{ [e_dist.get('81-100%', 0) * 8, 4]|max }}px; background: #10b981; border-radius: 1px;" title="81-100%: {{ e_dist.get('81-100%', 0) }}"></span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="10" style="text-align: center; padding: 2rem; color: #94a3b8;">No examinations match the selected filter criteria.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Top Students & Support Needed Cohort Alerts (PART 3) -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        <!-- Top Performing Students -->
+        <section class="content-panel" aria-labelledby="topStudentsTitle">
+            <div class="panel-header-custom" style="padding-bottom: 0.5rem; margin-bottom: 0.75rem;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="background: #fef3c7; color: #d97706; width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 700;">★</div>
+                    <h4 id="topStudentsTitle" style="margin: 0; color: #b45309; font-size: 1rem;">Top-Performing Students</h4>
+                </div>
+                <span class="badge-chip chip-amber">Honors Roll</span>
+            </div>
+            {% if analytics.top_students and analytics.top_students|length > 0 %}
+            <div class="student-mini-list">
+                {% for st in analytics.top_students %}
+                <div class="student-mini-item">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div class="rank-circle rank-{{ st.rank|default(loop.index) }}">{{ st.rank|default(loop.index) }}</div>
+                        <div>
+                            <a href="{{ url_for('admin.student_profile', student_id=st.student_id) }}" style="text-decoration: none; font-weight: 700; color: #1e3a8a;">{{ st.student_name|default(st.name|default('Student')) }}</a>
+                            <div style="font-size: 0.75rem; color: #64748b;">USN: {{ st.registration_number|default(st.usn|default('N/A')) }} | {{ st.department|default('N/A') }}</div>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="font-size: 1rem; font-weight: 800; color: #059669;">{{ st.average_percentage|default(st.avg_percentage|default(0.0)) }}%</span>
+                        <div style="font-size: 0.75rem; color: #64748b;">Grade: <strong>{{ st.grade|default('A') }}</strong></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p style="font-size: 0.85rem; color: #94a3b8; margin: 0;">No student evaluations available.</p>
+            {% endif %}
+        </section>
+
+        <!-- Students Requiring Additional Academic Support -->
+        <section class="content-panel" aria-labelledby="supportStudentsTitle">
+            <div class="panel-header-custom" style="padding-bottom: 0.5rem; margin-bottom: 0.75rem;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="background: #fee2e2; color: #b91c1c; width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 700;">⚠</div>
+                    <h4 id="supportStudentsTitle" style="margin: 0; color: #b91c1c; font-size: 1rem;">Students Requiring Support</h4>
+                </div>
+                <span class="badge-chip chip-red">Academic Intervention</span>
+            </div>
+            {% if analytics.support_needed_students and analytics.support_needed_students|length > 0 %}
+            <div class="student-mini-list">
+                {% for st in analytics.support_needed_students %}
+                <div class="student-mini-item support-alert-item">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div class="support-warning-circle">!</div>
+                        <div>
+                            <a href="{{ url_for('admin.student_profile', student_id=st.student_id) }}" style="text-decoration: none; font-weight: 700; color: #991b1b;">{{ st.student_name|default(st.name|default('Student')) }}</a>
+                            <div style="font-size: 0.75rem; color: #64748b;">USN: {{ st.registration_number|default(st.usn|default('N/A')) }} | {{ st.department|default('N/A') }}</div>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="font-size: 1rem; font-weight: 800; color: #dc2626;">{{ st.average_percentage|default(st.avg_percentage|default(0.0)) }}%</span>
+                        <div style="font-size: 0.75rem; color: #dc2626;">Grade: <strong>{{ st.grade|default('F') }}</strong> ({{ st.pass_fail_status|default(st.status|default('Fail')) }})</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div style="padding: 1rem; text-align: center; color: #059669; font-size: 0.85rem; background: #ecfdf5; border-radius: 6px;">
+                ✓ Excellent! No students in this scope currently require targeted remediation.
+            </div>
+            {% endif %}
+        </section>
+    </div>
+
+    <!-- Student Ranking & Comprehensive Individual Analytics Table (PART 2 & PART 3) -->
+    <section class="content-panel" aria-labelledby="rankingsTableTitle">
+        <div class="panel-header-custom">
+            <div>
+                <h3 id="rankingsTableTitle" style="margin: 0; font-size: 1.15rem; color: #1e3a8a;">Student Ranking &amp; Individual Performance Analytics</h3>
+                <p style="margin: 4px 0 0 0; font-size: 0.85rem; color: #64748b;">Comprehensive student scorecards including time taken, answer fidelity, and topic strengths/weaknesses</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="badge-chip chip-purple">{{ analytics.student_rankings|length }} Candidates Ranked</span>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table" id="studentRankingsTable">
+                <thead>
+                    <tr>
+                        <th style="width: 50px; text-align: center;">Rank</th>
+                        <th>Student Name &amp; USN</th>
+                        <th>Department &amp; Sem</th>
+                        <th style="text-align: center;">Attempts</th>
+                        <th style="text-align: center;">Marks Scored</th>
+                        <th style="text-align: center;">Percentage</th>
+                        <th style="text-align: center;">Grade</th>
+                        <th style="text-align: center;">Status</th>
+                        <th style="text-align: center;">Avg Time</th>
+                        <th>Answers (✓/✗/Unans)</th>
+                        <th>Topic Strengths</th>
+                        <th>Topic Weaknesses</th>
+                        <th style="text-align: center;">Profile</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for st in analytics.student_rankings %}
+                    <tr>
+                        <td style="text-align: center;">
+                            <span class="rank-circle rank-{{ st.rank|default(loop.index) }}">{{ st.rank|default(loop.index) }}</span>
+                        </td>
+                        <td>
+                            <strong>{{ st.student_name|default(st.name|default('Student')) }}</strong>
+                            <div style="font-size: 0.75rem; color: #64748b;">{{ st.registration_number|default(st.usn|default('N/A')) }} | {{ st.email|default('') }}</div>
+                        </td>
+                        <td>
+                            <div style="font-size: 0.8rem; font-weight: 600;">{{ st.department|default('N/A') }}</div>
+                            <div style="font-size: 0.75rem; color: #64748b;">{{ st.semester|default('-') }}</div>
+                        </td>
+                        <td style="text-align: center; font-weight: 600;">{{ st.total_examinations_attempted|default(st.attempts_count|default(0)) }}</td>
+                        <td style="text-align: center;">
+                            <strong>{{ st.total_marks|default(st.total_marks_obtained|default(0.0)) }}</strong> / {{ st.total_max_marks|default(100.0) }}
+                        </td>
+                        <td style="text-align: center;">
+                            <strong style="color: #2563eb; font-size: 0.95rem;">{{ st.average_percentage|default(st.avg_percentage|default(0.0)) }}%</strong>
+                        </td>
+                        <td style="text-align: center;">
+                            <span class="grade-badge grade-{{ (st.grade|default('F'))|replace('+', 'plus')|lower }}">{{ st.grade|default('F') }}</span>
+                        </td>
+                        <td style="text-align: center;">
+                            <span class="status-pill {% if st.pass_fail_status|default(st.status) in ('Pass', 'Passed') %}pill-green{% else %}pill-red{% endif %}">
+                                {{ st.pass_fail_status|default(st.status|default('N/A')) }}
+                            </span>
+                        </td>
+                        <td style="text-align: center; font-size: 0.8rem; color: #475569;">
+                            {{ st.time_taken|default(st.avg_time_taken|default('N/A')) }}
+                        </td>
+                        <td>
+                            <div style="font-size: 0.8rem; font-weight: 600;">
+                                <span style="color: #10b981;">{{ st.correct_answers }}✓</span> /
+                                <span style="color: #ef4444;">{{ st.incorrect_answers }}✗</span> /
+                                <span style="color: #94a3b8;">{{ st.unanswered_questions }} unans</span>
+                            </div>
+                        </td>
+                        <td>
+                            {% if st.topic_strengths and st.topic_strengths|length > 0 %}
+                            <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                                {% for top in st.topic_strengths %}
+                                <span class="tag-strength">{{ top }}</span>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <span style="font-size: 0.75rem; color: #94a3b8;">None recorded</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if st.topic_weaknesses and st.topic_weaknesses|length > 0 %}
+                            <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                                {% for top in st.topic_weaknesses %}
+                                <span class="tag-weakness">{{ top }}</span>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <span style="font-size: 0.75rem; color: #059669;">No weakness flags</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align: center;">
+                            <a href="{{ url_for('admin.student_profile', student_id=st.student_id) }}" class="btn-profile-link" title="Open student profile and audit records">
+                                View
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="13" style="text-align: center; padding: 2rem; color: #94a3b8;">
+                            No student rankings found for the active filter parameters.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+<style>
+/* Performance Analytics Modern Theme */
+.reports-shell {
+    max-width: 1400px;
+    margin: 0 auto;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Header Export Buttons */
+.btn-action-export {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.55rem 0.95rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    border: 1px solid transparent;
+}
+.btn-pdf {
+    background: #fef2f2;
+    color: #b91c1c;
+    border-color: #fecaca;
+}
+.btn-pdf:hover {
+    background: #fee2e2;
+    color: #991b1b;
+}
+.btn-excel {
+    background: #ecfdf5;
+    color: #047857;
+    border-color: #a7f3d0;
+}
+.btn-excel:hover {
+    background: #d1fae5;
+    color: #065f46;
+}
+.btn-csv {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+}
+.btn-csv:hover {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+/* Filter Toolbar */
+.filter-panel {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.filter-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+.filter-panel-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    color: #1e3a8a;
+    font-size: 0.95rem;
+}
+.active-filter-badge {
+    background: #dbeafe;
+    color: #1d4ed8;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 12px;
+}
+.filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) auto;
+    gap: 12px;
+    align-items: end;
+}
+.filter-field label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 4px;
+}
+.filter-field select {
+    width: 100%;
+    height: 38px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 0 10px;
+    font-size: 0.85rem;
+    color: #1e293b;
+    background-color: #ffffff;
+}
+.filter-actions-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.btn-filter-apply {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 38px;
+    padding: 0 14px;
+    background: #2563eb;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.btn-filter-apply:hover {
+    background: #1d4ed8;
+}
+.btn-filter-reset {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 38px;
+    padding: 0 12px;
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.15s;
+}
+.btn-filter-reset:hover {
+    background: #e2e8f0;
+}
+
+/* Executive KPI Grid */
+.overview-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.kpi-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.kpi-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.kpi-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+}
+.kpi-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.icon-blue { background: #eff6ff; color: #2563eb; }
+.icon-indigo { background: #e0e7ff; color: #4f46e5; }
+.icon-purple { background: #f3e8ff; color: #9333ea; }
+.icon-green { background: #ecfdf5; color: #059669; }
+.icon-amber { background: #fef3c7; color: #d97706; }
+.kpi-value {
+    font-size: 1.85rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.1;
+    margin-bottom: 4px;
+}
+.kpi-sub {
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+/* Charts Grid */
+.charts-master-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+.chart-panel {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.25rem;
+    border-bottom: 1px solid #f8fafc;
+    padding-bottom: 0.75rem;
+}
+.chart-header h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    color: #1e3a8a;
+    font-weight: 700;
+}
+.chart-header p {
+    margin: 3px 0 0 0;
+    font-size: 0.8rem;
+    color: #64748b;
+}
+.chart-body {
+    min-height: 190px;
+}
+.chart-svg {
+    width: 100%;
+    height: 190px;
+}
+.chart-empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 180px;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    text-align: center;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px dashed #e2e8f0;
+}
+
+/* Badges & Chips */
+.badge-chip {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 12px;
+    white-space: nowrap;
+}
+.chip-blue { background: #eff6ff; color: #1d4ed8; }
+.chip-purple { background: #f3e8ff; color: #7e22ce; }
+.chip-green { background: #ecfdf5; color: #047857; }
+.chip-amber { background: #fef3c7; color: #b45309; }
+.chip-red { background: #fef2f2; color: #b91c1c; }
+.chip-indigo { background: #e0e7ff; color: #3730a3; }
+
+/* Question Accuracy Stack */
+.question-accuracy-panel {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.panel-header-custom {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+.accuracy-bars-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.accuracy-bar-item {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 14px;
+}
+.q-meta-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    gap: 10px;
+}
+.q-statement-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow: hidden;
+}
+.q-num-pill {
+    background: #1e3a8a;
+    color: #ffffff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+.q-text {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 620px;
+}
+.q-tags-group {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    white-space: nowrap;
+}
+.q-topic-tag {
+    background: #e2e8f0;
+    color: #334155;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+.difficulty-pill {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 10px;
+    text-transform: capitalize;
+}
+.pill-easy { background: #d1fae5; color: #065f46; }
+.pill-medium { background: #fef3c7; color: #92400e; }
+.pill-hard { background: #fee2e2; color: #991b1b; }
+.q-marks-tag {
+    font-size: 0.72rem;
+    color: #64748b;
+    font-weight: 600;
+}
+.accuracy-progress-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.accuracy-track {
+    flex: 1;
+    height: 10px;
+    background: #e2e8f0;
+    border-radius: 6px;
+    overflow: hidden;
+}
+.accuracy-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.3s ease;
+}
+.accuracy-score-box {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    white-space: nowrap;
+    font-size: 0.85rem;
+}
+.accuracy-counts {
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+/* Mastery Panels */
+.mastery-panel {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.mastery-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.mastery-card-item {
+    background: #f8fafc;
+    border: 1px solid #f1f5f9;
+    border-radius: 6px;
+    padding: 8px 12px;
+}
+
+/* Student Mini Lists */
+.student-mini-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.student-mini-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: #f8fafc;
+    border: 1px solid #f1f5f9;
+    border-radius: 8px;
+}
+.support-alert-item {
+    border-left: 3px solid #dc2626;
+    background: #fffdfd;
+}
+.rank-circle {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 800;
+    background: #e2e8f0;
+    color: #475569;
+}
+.rank-1 { background: #fef3c7; color: #b45309; }
+.rank-2 { background: #e0e7ff; color: #3730a3; }
+.rank-3 { background: #fed7aa; color: #9a3412; }
+.support-warning-circle {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #fee2e2;
+    color: #b91c1c;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.75rem;
+}
+
+/* Tables */
+.table-responsive {
+    overflow-x: auto;
+}
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+.data-table th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.03em;
+    padding: 10px 12px;
+    border-bottom: 2px solid #e2e8f0;
+    text-align: left;
+}
+.data-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #1e293b;
+    vertical-align: middle;
+}
+.data-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+/* Status & Grade Badges */
+.status-pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+.pill-green { background: #d1fae5; color: #065f46; }
+.pill-red { background: #fee2e2; color: #991b1b; }
+.grade-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 800;
+}
+.grade-aplus { background: #d1fae5; color: #065f46; }
+.grade-a { background: #dbeafe; color: #1e40af; }
+.grade-b { background: #e0e7ff; color: #3730a3; }
+.grade-c { background: #fef3c7; color: #92400e; }
+.grade-d { background: #fed7aa; color: #9a3412; }
+.grade-f { background: #fee2e2; color: #991b1b; }
+
+/* Topic Badges */
+.tag-strength {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+    font-size: 0.7rem;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+.tag-weakness {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+    font-size: 0.7rem;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.btn-profile-link {
+    display: inline-block;
+    padding: 3px 8px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-decoration: none;
+    border: 1px solid #bfdbfe;
+    transition: background 0.15s;
+}
+.btn-profile-link:hover {
+    background: #dbeafe;
+}
+
+@media (max-width: 768px) {
+    .charts-master-grid {
+        grid-template-columns: 1fr;
+    }
+    .filters-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ page_title }} | ExamShield AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="dashboard-page">
+    <header class="site-header">
+        <div class="brand-block">
+            <div class="brand-mark" aria-hidden="true">E</div>
+            <div>
+                <div class="brand-title">ExamShield AI</div>
+                <div class="brand-subtitle">Secure online examinations</div>
+            </div>
+        </div>
+        <nav class="nav-bar" aria-label="Primary navigation">
+            <a href="{{ url_for('dashboard') }}" class="nav-active">Dashboard</a>
+            <a href="{{ url_for('reports.reports_page') }}">Exam history</a>
+            <a href="{{ url_for('settings.settings_page') }}">Settings</a>
+            <a href="{{ url_for('auth.login') }}">Sign out</a>
+        </nav>
+    </header>
+
+    <main class="dashboard-shell">
+        <div class="dashboard-intro">
+            <div>
+                <p class="eyebrow">Student workspace</p>
+                <h1>Welcome back, {{ student_info.student_name }}</h1>
+                <p class="message">Your exam workspace is ready. Start only when you are prepared to enable camera monitoring.</p>
+            </div>
+            <div class="student-meta">USN: <strong>{{ student_info.student_usn }}</strong></div>
+        </div>
+
+        <div id="liveAlertBanner" class="alert-banner alert-hidden" role="alert">
+            <span aria-hidden="true">!</span>
+            <span id="alertMessage">A proctoring alert needs your attention.</span>
+        </div>
+
+        <section class="dashboard-grid" aria-label="Exam workspace">
+            <article class="dashboard-card student-card">
+                <div>
+                    <p class="card-kicker">Current examination</p>
+                    <h2>{{ student_info.student_subject }}</h2>
+                    <p class="message">Exam code: <strong>{{ student_info.student_exam_code }}</strong></p>
+                </div>
+                <dl class="student-details">
+                    <div><dt>Student ID</dt><dd>{{ student_info.student_id }}</dd></div>
+                    <div><dt>USN</dt><dd>{{ student_info.student_usn }}</dd></div>
+                    <div><dt>Subject</dt><dd>{{ student_info.student_subject }}</dd></div>
+                    <div><dt>Exam code</dt><dd>{{ student_info.student_exam_code }}</dd></div>
+                </dl>
+            </article>
+
+            <article class="dashboard-card timer-card">
+                <div class="card-header-row">
+                    <p class="card-kicker">Examination session</p>
+                    <span class="status-badge status-neutral" id="aiStatusBadge">{{ ai_status }}</span>
+                </div>
+                <div class="timer-display" id="examTimer" data-running="false" aria-live="polite">00:00:00</div>
+                <p class="message" id="examStateMessage">Exam is ready to start.</p>
+                <div class="action-row">
+                    <button type="button" class="primary-button" id="startExamButton">Start examination</button>
+                    <button type="button" class="secondary-button" id="stopExamButton" disabled>End examination</button>
+                    <button type="button" class="secondary-button" id="generateReportButton" disabled>Generate report</button>
+                    <button type="button" class="secondary-button" id="downloadReportButton" disabled>Download report</button>
+                </div>
+            </article>
+
+            <article class="dashboard-card warning-card">
+                <p class="card-kicker">Proctoring alerts</p>
+                <div class="warning-count" id="warningCount">{{ warnings_count }}</div>
+                <p class="message" id="warningDetailMessage">No exam irregularities recorded.</p>
+            </article>
+
+            <article class="dashboard-card camera-card">
+                <div class="card-header-row">
+                    <p class="card-kicker">Camera preview</p>
+                    <div>
+                        <span class="live-indicator"><span class="live-dot"></span>Live</span>
+                        <span class="status-badge status-neutral" id="cameraStatusBadge">{{ camera_status }}</span>
+                    </div>
+                </div>
+                <div class="camera-feed-shell">
+                    <img id="cameraStream" class="camera-stream" alt="Live camera preview" hidden>
+                    <div id="cameraPlaceholder" class="camera-placeholder">
+                        <div class="placeholder-icon" aria-hidden="true">▣</div>
+                        <p>Camera preview is inactive. Select <strong>Start examination</strong> when you are ready.</p>
+                    </div>
+                </div>
+            </article>
+
+            <article class="dashboard-card checklist-card">
+                <div class="card-header-row">
+                    <p class="card-kicker">AI monitoring</p>
+                    <span class="status-badge status-neutral">Live checks</span>
+                </div>
+                <ul class="proctor-checklist" id="proctorChecklist">
+                    <li class="check-item" id="checkFace"><span class="check-icon">✓</span><span class="check-label">Face presence</span><span class="check-value" id="valFace">Waiting</span></li>
+                    <li class="check-item" id="checkPose"><span class="check-icon">✓</span><span class="check-label">Gaze / head pose</span><span class="check-value" id="valPose">Waiting</span></li>
+                    <li class="check-item" id="checkPerson"><span class="check-icon">✓</span><span class="check-label">Room occupancy</span><span class="check-value" id="valPerson">Waiting</span></li>
+                    <li class="check-item" id="checkPhone"><span class="check-icon">✓</span><span class="check-label">Prohibited devices</span><span class="check-value" id="valPhone">Waiting</span></li>
+                </ul>
+            </article>
+
+            <article class="dashboard-card subsystems-card">
+                <div class="card-header-row">
+                    <p class="card-kicker">System readiness</p>
+                    <span class="message">Connected to the existing proctoring engine</span>
+                </div>
+                <div class="subsystems-grid">
+                    <div class="subsystem-item"><span class="subsystem-name">Camera device</span><span class="subsystem-val" id="sysCamera">Checking...</span></div>
+                    <div class="subsystem-item"><span class="subsystem-name">Face detector</span><span class="subsystem-val" id="sysFace">Checking...</span></div>
+                    <div class="subsystem-item"><span class="subsystem-name">Head pose / mesh</span><span class="subsystem-val" id="sysPose">Checking...</span></div>
+                    <div class="subsystem-item"><span class="subsystem-name">YOLOv8 object AI</span><span class="subsystem-val" id="sysYolo">Checking...</span></div>
+                </div>
+            </article>
+        </section>
+    </main>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
