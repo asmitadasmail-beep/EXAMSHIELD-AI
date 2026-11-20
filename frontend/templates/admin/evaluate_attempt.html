@@ -1,0 +1,259 @@
+{% extends "admin/layout.html" %}
+{% set active_tab = "evaluations" %}
+{% block heading %}Evaluate Candidate Attempt{% endblock %}
+{% block admin_content %}
+<div class="dashboard-content">
+    <div style="margin-bottom: 1.25rem;">
+        <a href="{{ url_for('admin.evaluations_list') }}" style="color: #2563eb; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.9rem;">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Back to Evaluations Queue
+        </a>
+    </div>
+
+    <!-- Candidate Header Card -->
+    <div class="dashboard-card" style="margin-bottom: 1.5rem; padding: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <span class="status-pill pill-primary" style="margin-bottom: 0.5rem; display: inline-block;">Attempt #{{ attempt.attempt_id }}</span>
+                <h2 style="font-size: 1.5rem; color: #1e293b; margin: 0 0 0.25rem 0;">{{ student.name }}</h2>
+                <div style="color: #64748b; font-size: 0.9rem;">
+                    USN: <strong style="color: #334155;">{{ student.usn }}</strong> &bull;
+                    Exam: <strong style="color: #334155;">{{ exam.name }}</strong> &bull;
+                    Subject: {{ exam.subject_name or 'General' }}
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <div style="text-align: right;">
+                    <div style="font-size: 0.8rem; color: #64748b; text-transform: uppercase; font-weight: 600;">Current Score</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: #1e293b;">
+                        {{ result.marks_obtained if result else 0.0 }} <span style="font-size: 1rem; color: #64748b; font-weight: 500;">/ {{ exam.max_marks }}</span>
+                    </div>
+                    <div style="font-size: 0.85rem; color: #2563eb; font-weight: 600;">
+                        {{ "%.1f"|format(result.percentage) if result else 0.0 }}% &bull; Grade: {{ result.grade if result and result.grade else 'Pending' }}
+                    </div>
+                </div>
+
+                <div>
+                    {% if result and result.is_published %}
+                    <span class="status-pill pill-success" style="padding: 0.5rem 1rem; font-size: 0.85rem; font-weight: 600; background: #d1fae5; color: #065f46; border-radius: 8px; display: inline-block;">
+                        ✓ Results Published
+                    </span>
+                    {% else %}
+                    <span class="status-pill pill-warning" style="padding: 0.5rem 1rem; font-size: 0.85rem; font-weight: 600; background: #fef3c7; color: #92400e; border-radius: 8px; display: inline-block;">
+                        ⏳ Unpublished (Evaluation In Progress)
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {% if not result or not result.is_published %}
+        <div style="margin-top: 1rem; padding: 0.75rem 1rem; background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; font-size: 0.85rem; color: #92400e; display: flex; align-items: center; gap: 0.5rem;">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span>Candidate cannot view results or scores until you click <strong>"Publish Final Results"</strong>. You may save intermediate drafts safely.</span>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Evaluation Form -->
+    <form method="post" action="{{ url_for('admin.save_attempt_evaluation', attempt_id=attempt.attempt_id) }}" id="evaluationForm">
+        <input type="hidden" name="csrf_token" value="{{ admin_csrf_token() }}">
+
+        <!-- Subjective Questions Section -->
+        <div class="dashboard-card" style="margin-bottom: 2rem;">
+            <div class="card-header-bar">
+                <div class="card-title-group">
+                    <h3>Subjective Questions ({{ subjective_questions|length }})</h3>
+                    <p>Review candidate responses, compare against reference model answers, and assign verified marks.</p>
+                </div>
+            </div>
+
+            <div class="card-body-panel" style="padding: 1.5rem;">
+                {% if subjective_questions and subjective_questions|length > 0 %}
+                    <div style="display: flex; flex-direction: column; gap: 2rem;">
+                        {% for q in subjective_questions %}
+                        <div class="evaluation-question-block" style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 1.5rem; background: #fafbfc;">
+                            <!-- Question Meta -->
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                                <div>
+                                    <span style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; background: #e0f2fe; color: #0369a1; padding: 0.2rem 0.6rem; border-radius: 4px; margin-right: 0.5rem;">
+                                        Q{{ loop.index }} &bull; {{ q.question_type|replace('_', ' ')|title }}
+                                    </span>
+                                    {% if q.topic %}
+                                    <span style="font-size: 0.8rem; color: #64748b;">Topic: <strong>{{ q.topic }}</strong></span>
+                                    {% endif %}
+                                </div>
+                                <div style="font-weight: 700; color: #1e293b; font-size: 0.95rem;">
+                                    Max Marks: <span class="max-mark-val" data-qid="{{ q.question_id }}">{{ q.marks }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Question Statement -->
+                            <div style="font-size: 1.05rem; font-weight: 600; color: #1e293b; margin-bottom: 1.25rem; line-height: 1.5;">
+                                {{ q.statement }}
+                            </div>
+
+                            <!-- Model / Reference Answer if present -->
+                            {% if q.correct_answer_text or q.explanation %}
+                            <div style="margin-bottom: 1.25rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 0.875rem 1.25rem;">
+                                <div style="font-size: 0.8rem; font-weight: 700; color: #166534; text-transform: uppercase; margin-bottom: 0.35rem;">
+                                    Reference Key / Model Answer:
+                                </div>
+                                <div style="font-size: 0.9rem; color: #14532d; line-height: 1.5;">
+                                    {{ q.correct_answer_text or q.explanation }}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Student Answer -->
+                            <div style="margin-bottom: 1.5rem;">
+                                <div style="font-size: 0.85rem; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 0.5rem; display: flex; justify-content: space-between;">
+                                    <span>Candidate's Response:</span>
+                                    {% if not q.answer_text %}
+                                    <span style="color: #ef4444; font-weight: 600;">Unanswered</span>
+                                    {% endif %}
+                                </div>
+                                <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 1rem 1.25rem; font-size: 0.95rem; color: #1e293b; line-height: 1.6; white-space: pre-wrap; min-height: 80px;">
+                                    {{ q.answer_text or '— No response submitted by candidate —' }}
+                                </div>
+                            </div>
+
+                            <!-- Grading Inputs Grid -->
+                            <div style="display: grid; grid-template-columns: 200px 1fr; gap: 1.5rem; align-items: flex-start; background: #ffffff; padding: 1.25rem; border: 1px solid #e2e8f0; border-radius: 8px;">
+                                <div>
+                                    <label for="marks_{{ q.question_id }}" style="display: block; font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
+                                        Marks Awarded (0 - {{ q.marks }}):
+                                    </label>
+                                    <input type="number" step="0.5" min="0" max="{{ q.marks }}"
+                                           name="marks_{{ q.question_id }}" id="marks_{{ q.question_id }}"
+                                           value="{{ q.marks_awarded if q.marks_awarded is not none else '' }}"
+                                           placeholder="Enter marks" required
+                                           class="form-control marks-input"
+                                           data-max="{{ q.marks }}"
+                                           style="width: 100%; font-size: 1.1rem; font-weight: 700; padding: 0.5rem 0.75rem; border: 1.5px solid #94a3b8; border-radius: 6px; text-align: center;">
+                                </div>
+
+                                <div>
+                                    <label for="feedback_{{ q.question_id }}" style="display: block; font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
+                                        Instructor Feedback / Evaluation Notes:
+                                    </label>
+                                    <textarea name="feedback_{{ q.question_id }}" id="feedback_{{ q.question_id }}"
+                                              rows="2" placeholder="Provide constructive remarks, points deducted, or guidance..."
+                                              class="form-control" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; font-family: inherit;">{{ q.teacher_feedback or '' }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p style="color: #64748b; font-style: italic;">No subjective questions in this examination.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Objective Questions Reference Section -->
+        {% if objective_questions and objective_questions|length > 0 %}
+        <div class="dashboard-card" style="margin-bottom: 2rem;">
+            <div class="card-header-bar" style="cursor: pointer;" onclick="toggleObjectiveSection()">
+                <div class="card-title-group">
+                    <h3>Auto-Graded Objective Questions ({{ objective_questions|length }})</h3>
+                    <p>Click to toggle review of auto-graded multiple choice, fill in the blanks, and numerical answers.</p>
+                </div>
+                <span id="objectiveToggleIcon" style="font-size: 1.25rem; color: #64748b;">▼</span>
+            </div>
+
+            <div class="card-body-panel" id="objectiveQuestionsPanel" style="display: none; padding: 1.5rem;">
+                <div class="table-scroll-shell">
+                    <table class="data-table" style="width: 100%;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #e2e8f0; background: #f8fafc;">
+                                <th style="padding: 0.75rem 1rem;">Q#</th>
+                                <th style="padding: 0.75rem 1rem;">Question Statement</th>
+                                <th style="padding: 0.75rem 1rem;">Candidate Answer</th>
+                                <th style="padding: 0.75rem 1rem;">Correct Answer</th>
+                                <th style="padding: 0.75rem 1rem; text-align: right;">Points Awarded</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for oq in objective_questions %}
+                            <tr style="border-bottom: 1px solid #f1f5f9;">
+                                <td style="padding: 0.75rem 1rem; font-weight: 700;">{{ loop.index }}</td>
+                                <td style="padding: 0.75rem 1rem; max-width: 320px;">{{ oq.statement }}</td>
+                                <td style="padding: 0.75rem 1rem;">
+                                    {% if oq.answer_text %}
+                                        {{ oq.answer_text }}
+                                    {% elif oq.selected_option_text %}
+                                        {{ oq.selected_option_text }}
+                                    {% else %}
+                                        <span style="color: #94a3b8; font-style: italic;">Unanswered</span>
+                                    {% endif %}
+                                </td>
+                                <td style="padding: 0.75rem 1rem; color: #166534; font-weight: 600;">
+                                    {{ oq.correct_answer_text or oq.correct_option_text or '—' }}
+                                </td>
+                                <td style="padding: 0.75rem 1rem; text-align: right; font-weight: 700;">
+                                    {% if oq.is_correct %}
+                                    <span style="color: #166534;">+{{ oq.marks }}</span>
+                                    {% elif oq.answer_text or oq.selected_option_text %}
+                                    <span style="color: #dc2626;">-{{ oq.negative_marks or exam.negative_marking or 0.0 }}</span>
+                                    {% else %}
+                                    <span style="color: #94a3b8;">0</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Bottom Actions Sticky Bar -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1.25rem 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); position: sticky; bottom: 1rem; z-index: 10;">
+            <div style="font-size: 0.9rem; color: #64748b;">
+                Ensure all subjective questions have assigned marks before publishing final results.
+            </div>
+
+            <div style="display: flex; gap: 0.75rem;">
+                <button type="submit" name="publish" value="0" class="btn-secondary" style="padding: 0.6rem 1.25rem; font-weight: 600;">
+                    Save Draft Evaluation
+                </button>
+                <button type="submit" name="publish" value="1" class="btn-primary" style="padding: 0.6rem 1.5rem; font-weight: 600; background: #059669; border-color: #059669;" onclick="return confirm('Publish final evaluation results to the candidate? This makes scores visible on their dashboard.');">
+                    Publish Final Results
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+function toggleObjectiveSection() {
+    const p = document.getElementById("objectiveQuestionsPanel");
+    const icon = document.getElementById("objectiveToggleIcon");
+    if (p.style.display === "none") {
+        p.style.display = "block";
+        icon.textContent = "▲";
+    } else {
+        p.style.display = "none";
+        icon.textContent = "▼";
+    }
+}
+
+// Client validation ensuring marks <= max
+document.getElementById("evaluationForm").addEventListener("submit", function (e) {
+    let valid = true;
+    document.querySelectorAll(".marks-input").forEach(input => {
+        const val = parseFloat(input.value);
+        const max = parseFloat(input.dataset.max);
+        if (!isNaN(val) && (val < 0 || val > max)) {
+            alert(`Marks for a question cannot be less than 0 or greater than max marks (${max}).`);
+            input.focus();
+            valid = false;
+        }
+    });
+    if (!valid) e.preventDefault();
+});
+</script>
+{% endblock %}

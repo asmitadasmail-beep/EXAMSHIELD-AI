@@ -1,0 +1,365 @@
+{% extends "admin/layout.html" %}
+{% set active_tab = "students" %}
+
+{% block heading %}Student Profile: {{ student.name }}{% endblock %}
+
+{% block header_actions %}
+<div class="header-actions">
+    <a href="{{ url_for('admin.reports') }}" class="btn-secondary" style="display: inline-flex; align-items: center; gap: 6px;">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span>Performance Reports</span>
+    </a>
+    <a href="{{ url_for('admin.students') }}" class="btn-secondary" style="display: inline-flex; align-items: center; gap: 6px;">
+        <span>&larr; Back to Students</span>
+    </a>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+<div class="student-profile-container" style="max-width: 1300px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem;">
+    <!-- 1. Basic Student Information Card -->
+    <div class="content-panel" style="padding: 1.5rem; background: white; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1.25rem;">
+            <div style="display: flex; gap: 16px; align-items: center;">
+                <div style="width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; box-shadow: var(--shadow-sm);">
+                    {{ student.name[:2]|upper }}
+                </div>
+                <div>
+                    <h2 style="margin: 0; font-size: 1.4rem; color: var(--text-primary); font-weight: 700;">{{ student.name }}</h2>
+                    <div style="margin-top: 4px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 0.85rem; color: var(--text-secondary);">
+                        <span style="font-family: monospace; font-weight: 700; color: #1e293b; background: #f1f5f9; padding: 2px 8px; border-radius: 4px;">{{ student.usn }}</span>
+                        <span>&bull;</span>
+                        <span>{{ student.email }}</span>
+                        <span>&bull;</span>
+                        <span>{{ student.department }}</span>
+                        <span>&bull;</span>
+                        <span>{{ student.semester }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Badges & Status -->
+            <div style="display: flex; gap: 10px; align-items: center;">
+                {% if student.face_verified %}
+                <span class="status-pill pill-success" style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 6px 12px; font-size: 0.75rem;">
+                    &#10003; Biometrics Verified
+                </span>
+                {% else %}
+                <span class="status-pill pill-neutral" style="background: #f1f5f9; color: #64748b; padding: 6px 12px; font-size: 0.75rem;">
+                    Biometrics Pending
+                </span>
+                {% endif %}
+
+                <span class="status-pill pill-success" style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 6px 12px; font-size: 0.75rem;">
+                    <span style="width: 6px; height: 6px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+                    {{ student.account_status|title }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Performance Metric Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
+        <!-- Total Attempts -->
+        <div class="stat-card" style="background: white; border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem; box-shadow: var(--shadow-sm);">
+            <span class="stat-label" style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Total Examinations</span>
+            <div class="stat-value" style="font-size: 1.8rem; font-weight: 800; color: var(--text-primary); margin-top: 4px;">{{ profile.total_attempts }}</div>
+            <span class="stat-sub" style="font-size: 0.75rem; color: var(--text-muted);">{{ profile.submitted_attempts_count }} submitted attempts</span>
+        </div>
+
+        <!-- Average Marks -->
+        <div class="stat-card" style="background: white; border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem; box-shadow: var(--shadow-sm);">
+            <span class="stat-label" style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Average Marks</span>
+            <div class="stat-value" style="font-size: 1.8rem; font-weight: 800; color: var(--primary); margin-top: 4px;">{{ profile.avg_marks }}</div>
+            <span class="stat-sub" style="font-size: 0.75rem; color: var(--text-muted);">Mean score per assessment</span>
+        </div>
+
+        <!-- Average Percentage -->
+        <div class="stat-card" style="background: white; border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem; box-shadow: var(--shadow-sm);">
+            <span class="stat-label" style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Average Percentage</span>
+            <div class="stat-value" style="font-size: 1.8rem; font-weight: 800; color: {% if profile.avg_percentage >= 70 %}#059669{% elif profile.avg_percentage >= 50 %}var(--primary){% else %}#dc2626{% endif %}; margin-top: 4px;">{{ profile.avg_percentage }}%</div>
+            <span class="stat-sub" style="font-size: 0.75rem; color: var(--text-muted);">Cumulative evaluation rate</span>
+        </div>
+
+        <!-- Highest Score -->
+        <div class="stat-card" style="background: white; border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem; box-shadow: var(--shadow-sm);">
+            <span class="stat-label" style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Highest Score</span>
+            <div class="stat-value" style="font-size: 1.8rem; font-weight: 800; color: #059669; margin-top: 4px;">{{ profile.highest_score }}</div>
+            <span class="stat-sub" style="font-size: 0.75rem; color: var(--text-muted);">{{ profile.highest_percentage }}% maximum achieved</span>
+        </div>
+
+        <!-- Lowest Score -->
+        <div class="stat-card" style="background: white; border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem; box-shadow: var(--shadow-sm);">
+            <span class="stat-label" style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Lowest Score</span>
+            <div class="stat-value" style="font-size: 1.8rem; font-weight: 800; color: #dc2626; margin-top: 4px;">{{ profile.lowest_score }}</div>
+            <span class="stat-sub" style="font-size: 0.75rem; color: var(--text-muted);">{{ profile.lowest_percentage }}% minimum recorded</span>
+        </div>
+
+        <!-- Pass Rate -->
+        <div class="stat-card" style="background: white; border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem; box-shadow: var(--shadow-sm);">
+            <span class="stat-label" style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Passed Assessments</span>
+            <div class="stat-value" style="font-size: 1.8rem; font-weight: 800; color: #7c3aed; margin-top: 4px;">{{ profile.passed_count }}</div>
+            <span class="stat-sub" style="font-size: 0.75rem; color: var(--text-muted);">Out of {{ profile.submitted_attempts_count }} evaluated</span>
+        </div>
+    </div>
+
+    <!-- 3. Performance Visualizations: Progression Trendline & Subject-wise comparison -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(480px, 1fr)); gap: 1.5rem;">
+        <!-- Performance Progression Trend Chart -->
+        <div class="content-panel" style="padding: 1.5rem; background: white; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div>
+                    <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: var(--text-primary);">&#128200; Performance Progression Timeline</h3>
+                    <p style="margin: 2px 0 0; font-size: 0.78rem; color: var(--text-muted);">Sequential percentage scores across attempted assessments</p>
+                </div>
+            </div>
+
+            <div class="trend-chart-shell" style="padding: 10px 0;">
+                {% if profile.performance_progression and profile.performance_progression|length > 0 %}
+                <svg class="svg-trend-chart" viewBox="0 0 500 140" preserveAspectRatio="none" style="width: 100%; height: 160px; overflow: visible;">
+                    <!-- Grid Lines -->
+                    <line x1="40" y1="15" x2="490" y2="15" stroke="#e2e8f0" stroke-dasharray="3,3" stroke-width="1"/>
+                    <text x="5" y="19" font-size="9" fill="#94a3b8">100%</text>
+
+                    <line x1="40" y1="65" x2="490" y2="65" stroke="#e2e8f0" stroke-dasharray="3,3" stroke-width="1"/>
+                    <text x="12" y="69" font-size="9" fill="#94a3b8">50%</text>
+
+                    <line x1="40" y1="115" x2="490" y2="115" stroke="#cbd5e1" stroke-width="1"/>
+                    <text x="18" y="119" font-size="9" fill="#94a3b8">0%</text>
+
+                    {% set p_count = profile.performance_progression|length %}
+                    {% set step_x = (440 / (p_count - 1)) if p_count > 1 else 220 %}
+
+                    <!-- Fill polygon -->
+                    <polygon points="40,115
+                        {% for pt in profile.performance_progression %}
+                            {% set cx = 40 + (loop.index0 * step_x) %}
+                            {% set cy = 115 - (pt.percentage * 1.0) %}
+                            {{ cx }},{{ cy }}
+                        {% endfor %}
+                        {{ 40 + ((p_count - 1) * step_x) }},115"
+                        fill="rgba(37, 99, 235, 0.08)" />
+
+                    <!-- Line -->
+                    <polyline points="
+                        {% for pt in profile.performance_progression %}
+                            {% set cx = 40 + (loop.index0 * step_x) %}
+                            {% set cy = 115 - (pt.percentage * 1.0) %}
+                            {{ cx }},{{ cy }}
+                        {% endfor %}"
+                        fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+
+                    <!-- Data dots -->
+                    {% for pt in profile.performance_progression %}
+                        {% set cx = 40 + (loop.index0 * step_x) %}
+                        {% set cy = 115 - (pt.percentage * 1.0) %}
+                        <circle cx="{{ cx }}" cy="{{ cy }}" r="4" fill="#ffffff" stroke="#2563eb" stroke-width="2">
+                            <title>{{ pt.exam_name }} ({{ pt.subject_name }}): {{ pt.percentage }}% ({{ pt.marks_obtained }}/{{ pt.max_marks }})</title>
+                        </circle>
+                        <text x="{{ cx }}" y="{{ cy - 8 }}" font-size="9" font-weight="700" fill="#1e40af" text-anchor="middle">
+                            {{ pt.percentage|round(0)|int }}%
+                        </text>
+                    {% endfor %}
+                </svg>
+                {% else %}
+                <div style="padding: 40px; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+                    No sequential examination submissions recorded yet.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Subject-Wise Mastery Comparison Chart -->
+        <div class="content-panel" style="padding: 1.5rem; background: white; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div>
+                    <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: var(--text-primary);">&#128218; Subject-Wise Proficiency</h3>
+                    <p style="margin: 2px 0 0; font-size: 0.78rem; color: var(--text-muted);">Average score distribution by academic curriculum</p>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
+                {% for sub in profile.subject_performance %}
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; margin-bottom: 4px;">
+                        <span style="font-weight: 600; color: var(--text-primary);">{{ sub.subject_name }}</span>
+                        <span style="font-weight: 700; color: var(--primary);">{{ sub.avg_percentage }}% <small style="color: var(--text-muted); font-weight: normal;">({{ sub.attempts_count }} exams)</small></span>
+                    </div>
+                    <div style="width: 100%; height: 8px; background: #f1f5f9; border-radius: 999px; overflow: hidden;">
+                        <div style="width: {{ sub.avg_percentage }}%; height: 100%; background: linear-gradient(90deg, #3b82f6, #2563eb); border-radius: 999px;"></div>
+                    </div>
+                </div>
+                {% else %}
+                <div style="padding: 40px; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+                    No subject examination data available.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Strongest & Weakest Topics Breakdown -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.5rem;">
+        <!-- Strongest Topics -->
+        <div class="content-panel" style="padding: 1.5rem; background: white; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 1rem;">
+                <span style="font-size: 1.2rem;">&#128170;</span>
+                <div>
+                    <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: #065f46;">Strongest Topics</h3>
+                    <p style="margin: 2px 0 0; font-size: 0.75rem; color: var(--text-muted);">High accuracy chapters &amp; concepts</p>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                {% for t in profile.strongest_topics %}
+                <div style="padding: 10px 14px; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <strong style="font-size: 0.85rem; color: #065f46;">{{ t.topic }}</strong>
+                        <span style="font-weight: 800; color: #059669; font-size: 0.85rem;">{{ t.accuracy }}%</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #047857;">
+                        <span>{{ t.correct_answers }} of {{ t.total_questions }} questions correct</span>
+                    </div>
+                </div>
+                {% else %}
+                <p style="margin: 0; color: var(--text-muted); font-size: 0.85rem;">Topic breakdown will generate as assessments are answered.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Weakest Topics -->
+        <div class="content-panel" style="padding: 1.5rem; background: white; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 1rem;">
+                <span style="font-size: 1.2rem;">&#9888;</span>
+                <div>
+                    <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: #991b1b;">Areas for Improvement</h3>
+                    <p style="margin: 2px 0 0; font-size: 0.75rem; color: var(--text-muted);">Recommended concepts for reinforcement</p>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                {% for t in profile.weakest_topics %}
+                <div style="padding: 10px 14px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <strong style="font-size: 0.85rem; color: #991b1b;">{{ t.topic }}</strong>
+                        <span style="font-weight: 800; color: #dc2626; font-size: 0.85rem;">{{ t.accuracy }}%</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #b91c1c;">
+                        <span>{{ t.correct_answers }} of {{ t.total_questions }} correct (Needs Review)</span>
+                    </div>
+                </div>
+                {% else %}
+                <p style="margin: 0; color: var(--text-muted); font-size: 0.85rem;">No critical weak areas identified.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. Examination Participation History Table -->
+    <div class="content-panel" style="padding: 0; overflow: hidden; background: white; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+        <div style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-color); background: #f8fafc; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: var(--text-primary);">&#128221; Examination Participation &amp; Performance History</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">{{ profile.examination_history|length }} Attempt(s) Logged</span>
+        </div>
+        <div class="table-responsive" style="overflow-x: auto;">
+            <table class="data-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem;">
+                <thead style="background: #f8fafc; border-bottom: 1px solid var(--border-color); color: var(--text-secondary);">
+                    <tr>
+                        <th style="padding: 12px 14px; font-weight: 600;">Examination Title</th>
+                        <th style="padding: 12px 14px; font-weight: 600;">Subject</th>
+                        <th style="padding: 12px 14px; font-weight: 600;">Date Attempted</th>
+                        <th style="padding: 12px 14px; font-weight: 600;">Mode</th>
+                        <th style="padding: 12px 14px; font-weight: 600;">Time Taken</th>
+                        <th style="padding: 12px 14px; font-weight: 600; text-align: center;">Score</th>
+                        <th style="padding: 12px 14px; font-weight: 600; text-align: center;">Percentage</th>
+                        <th style="padding: 12px 14px; font-weight: 600; text-align: center;">Result</th>
+                        <th style="padding: 12px 14px; font-weight: 600; text-align: center;">Proctoring Risk</th>
+                        <th style="padding: 12px 14px; font-weight: 600; text-align: center;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in profile.examination_history %}
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 12px 14px; font-weight: 600; color: var(--text-primary);">
+                            {{ a.exam_name }}
+                        </td>
+                        <td style="padding: 12px 14px; white-space: nowrap;">
+                            <span class="badge badge-neutral" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; font-size: 0.75rem; padding: 3px 8px; border-radius: 6px; font-weight: 600;">
+                                {{ a.subject_name }}
+                            </span>
+                        </td>
+                        <td style="padding: 12px 14px; color: var(--text-muted); font-size: 0.8rem; white-space: nowrap;">
+                            {{ a.submitted_at[:16] if a.submitted_at else a.started_at[:16] }}
+                        </td>
+                        <td style="padding: 12px 14px; text-transform: capitalize; font-size: 0.8rem;">
+                            {{ a.mode }}
+                        </td>
+                        <td style="padding: 12px 14px; font-size: 0.8rem; white-space: nowrap;">
+                            {% if a.time_taken_seconds %}
+                                {{ (a.time_taken_seconds // 60) }}m {{ (a.time_taken_seconds % 60) }}s
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td style="padding: 12px 14px; text-align: center; font-weight: 700; color: var(--primary);">
+                            {% if a.marks_obtained is not none %}
+                                {{ a.marks_obtained }} / {{ a.max_marks }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td style="padding: 12px 14px; text-align: center; font-weight: 700;">
+                            {% if a.percentage is not none %}
+                                <span style="color: {% if a.percentage >= 65 %}#059669{% elif a.percentage >= 50 %}var(--primary){% else %}#dc2626{% endif %};">
+                                    {{ a.percentage|round(1) }}%
+                                </span>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td style="padding: 12px 14px; text-align: center; white-space: nowrap;">
+                            {% if a.marks_obtained is not none %}
+                                {% if a.marks_obtained >= (a.pass_marks or 0) %}
+                                <span class="status-pill pill-success" style="background: #ecfdf5; color: #065f46; font-size: 0.72rem;">Pass</span>
+                                {% else %}
+                                <span class="status-pill" style="background: #fef2f2; color: #991b1b; font-size: 0.72rem;">Fail</span>
+                                {% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td style="padding: 12px 14px; text-align: center; white-space: nowrap;">
+                            {% if a.risk_category %}
+                                {% set rcat = a.risk_category|lower %}
+                                {% if 'high' in rcat %}
+                                <span class="status-pill" style="background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; font-size: 0.72rem;">High ({{ a.risk_score|round(0) }})</span>
+                                {% elif 'medium' in rcat %}
+                                <span class="status-pill pill-warning" style="font-size: 0.72rem;">Medium ({{ a.risk_score|round(0) }})</span>
+                                {% else %}
+                                <span class="status-pill pill-success" style="font-size: 0.72rem;">Low ({{ a.risk_score|round(0) if a.risk_score else 0 }})</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="status-pill pill-neutral" style="font-size: 0.72rem;">Normal</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 12px 14px; text-align: center;">
+                            <span class="status-pill {% if a.status == 'submitted' %}pill-success{% else %}pill-warning{% endif %}" style="font-size: 0.72rem;">
+                                {{ a.status|title }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="10" style="padding: 40px; text-align: center; color: var(--text-muted);">
+                            <div style="font-size: 1.8rem; margin-bottom: 6px;">&#128101;</div>
+                            <h4 style="margin: 0 0 4px; color: var(--text-primary);">No assessment records</h4>
+                            <p style="margin: 0; font-size: 0.85rem;">This candidate has not yet submitted any examinations within your authorized scope.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

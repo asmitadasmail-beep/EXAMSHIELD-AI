@@ -1,0 +1,179 @@
+{% extends "admin/layout.html" %}
+{% set active_tab = "notifications" %}
+{% block heading %}Notification Center{% endblock %}
+{% block admin_content %}
+<div class="dashboard-content">
+    <div class="dashboard-header-banner">
+        <div class="header-meta">
+            <h2>Administrative Notifications</h2>
+            <p>Real-time alerts for student submissions, pending subjective evaluations, exam schedules, and completion events.</p>
+        </div>
+        <div class="header-actions">
+            {% if unread_count and unread_count > 0 %}
+            <form method="post" action="{{ url_for('admin.api_mark_all_admin_notifications_read') }}" style="display: inline;" onsubmit="handleMarkAllRead(event)">
+                <input type="hidden" name="csrf_token" value="{{ admin_csrf_token() }}">
+                <button type="submit" class="btn-secondary" id="markAllReadBtn">Mark All as Read ({{ unread_count }})</button>
+            </form>
+            {% endif %}
+            <a href="{{ url_for('admin.evaluations_list') }}" class="btn-primary">View Evaluations Queue</a>
+        </div>
+    </div>
+
+    <!-- Category Tabs -->
+    <div class="dashboard-card" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem;">
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <a href="{{ url_for('admin.notifications', type='all') }}"
+               class="tab-btn {% if not active_tab or active_tab == 'all' %}active{% endif %}"
+               style="padding: 0.4rem 0.9rem; border-radius: 9999px; text-decoration: none; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; {% if not active_tab or active_tab == 'all' %}background: #2563eb; color: #fff;{% else %}background: #f1f5f9; color: #475569;{% endif %}">
+                All Alerts <span style="font-size: 0.75rem; opacity: 0.85;">({{ counts.all if counts else notifications|length }})</span>
+            </a>
+            <a href="{{ url_for('admin.notifications', type='new_submission') }}"
+               class="tab-btn {% if active_tab == 'new_submission' %}active{% endif %}"
+               style="padding: 0.4rem 0.9rem; border-radius: 9999px; text-decoration: none; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; {% if active_tab == 'new_submission' %}background: #2563eb; color: #fff;{% else %}background: #f1f5f9; color: #475569;{% endif %}">
+                Submissions <span style="font-size: 0.75rem; opacity: 0.85;">({{ counts.new_submission if counts else 0 }})</span>
+            </a>
+            <a href="{{ url_for('admin.notifications', type='pending_evaluation') }}"
+               class="tab-btn {% if active_tab == 'pending_evaluation' %}active{% endif %}"
+               style="padding: 0.4rem 0.9rem; border-radius: 9999px; text-decoration: none; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; {% if active_tab == 'pending_evaluation' %}background: #d97706; color: #fff;{% else %}background: #fef3c7; color: #92400e;{% endif %}">
+                Pending Evaluations <span style="font-size: 0.75rem; opacity: 0.85;">({{ counts.pending_evaluation if counts else 0 }})</span>
+            </a>
+            <a href="{{ url_for('admin.notifications', type='upcoming_exam') }}"
+               class="tab-btn {% if active_tab == 'upcoming_exam' %}active{% endif %}"
+               style="padding: 0.4rem 0.9rem; border-radius: 9999px; text-decoration: none; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; {% if active_tab == 'upcoming_exam' %}background: #2563eb; color: #fff;{% else %}background: #f1f5f9; color: #475569;{% endif %}">
+                Upcoming Exams <span style="font-size: 0.75rem; opacity: 0.85;">({{ counts.upcoming_exam if counts else 0 }})</span>
+            </a>
+            <a href="{{ url_for('admin.notifications', type='completed_exam') }}"
+               class="tab-btn {% if active_tab == 'completed_exam' %}active{% endif %}"
+               style="padding: 0.4rem 0.9rem; border-radius: 9999px; text-decoration: none; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; {% if active_tab == 'completed_exam' %}background: #2563eb; color: #fff;{% else %}background: #f1f5f9; color: #475569;{% endif %}">
+                Completed Exams <span style="font-size: 0.75rem; opacity: 0.85;">({{ counts.completed_exam if counts else 0 }})</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Notification List -->
+    <div class="dashboard-card">
+        <div class="card-header-bar">
+            <div class="card-title-group">
+                <h3>Active Alerts &amp; Activities</h3>
+                <p>Showing alerts relevant to your account and assigned examinations.</p>
+            </div>
+            <span class="status-pill pill-primary">{{ notifications|length }} items</span>
+        </div>
+
+        <div class="card-body-panel" style="padding: 0;">
+            {% if notifications and notifications|length > 0 %}
+            <div style="display: flex; flex-direction: column;">
+                {% for notif in notifications %}
+                <div class="notification-row-item" id="notif-row-{{ notif.notification_id }}"
+                     style="display: flex; align-items: flex-start; justify-content: space-between; padding: 1.25rem 1.5rem; border-bottom: 1px solid #f1f5f9; {% if not notif.is_read %}background: #f8fafc;{% endif %}; transition: background 0.15s ease;">
+                    <div style="display: flex; align-items: flex-start; gap: 1rem; flex: 1;">
+                        <div style="margin-top: 0.25rem;">
+                            {% if not notif.is_read %}
+                            <div style="width: 10px; height: 10px; border-radius: 50%; background: #2563eb;"></div>
+                            {% else %}
+                            <div style="width: 10px; height: 10px; border-radius: 50%; background: #cbd5e1;"></div>
+                            {% endif %}
+                        </div>
+
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                                <h4 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: #1e293b;">
+                                    {{ notif.title or (notif.student_name ~ ' submitted ' ~ notif.exam_name) }}
+                                </h4>
+                                <span class="status-pill" style="font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 9999px;
+                                    {% if notif.type == 'pending_evaluation' %}background: #fef3c7; color: #92400e;
+                                    {% elif notif.type == 'new_submission' %}background: #e0f2fe; color: #0369a1;
+                                    {% elif notif.type == 'upcoming_exam' %}background: #f3e8ff; color: #6b21a8;
+                                    {% elif notif.type == 'completed_exam' %}background: #d1fae5; color: #065f46;
+                                    {% else %}background: #f1f5f9; color: #475569;{% endif %}">
+                                    {{ notif.type|replace('_', ' ')|title }}
+                                </span>
+                            </div>
+
+                            <p style="margin: 0 0 0.5rem 0; font-size: 0.875rem; color: #475569; line-height: 1.5;">
+                                {{ notif.message or ('Candidate scored ' ~ notif.marks_obtained ~ '/' ~ notif.max_marks ~ ' (' ~ notif.percentage|round(1) ~ '%)') }}
+                            </p>
+
+                            <div style="font-size: 0.8rem; color: #94a3b8;">
+                                {{ notif.created_at or notif.timestamp or 'Just now' }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 0.75rem; margin-left: 1rem;">
+                        {% if notif.link %}
+                        <a href="{{ notif.link }}" class="btn-secondary" style="font-size: 0.8rem; padding: 0.35rem 0.75rem; text-decoration: none;">
+                            View Details
+                        </a>
+                        {% endif %}
+
+                        {% if not notif.is_read and notif.notification_id %}
+                        <button type="button" class="btn-icon" title="Mark as read"
+                                onclick="markSingleRead({{ notif.notification_id }})"
+                                style="background: transparent; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.35rem 0.5rem; font-size: 0.75rem; color: #64748b; cursor: pointer;">
+                            Mark Read
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div style="padding: 3.5rem 1.5rem; text-align: center; color: #64748b;">
+                <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🔔</div>
+                <h4 style="color: #1e293b; margin-bottom: 0.25rem;">No Notifications Found</h4>
+                <p style="font-size: 0.9rem;">No alerts available under this category. Activities will automatically log here.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function markSingleRead(id) {
+    const csrfToken = "{{ admin_csrf_token() }}";
+    fetch(`/admin/api/notifications/${id}/read`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfToken
+        },
+        body: JSON.stringify({ csrf_token: csrfToken })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            const row = document.getElementById(`notif-row-${id}`);
+            if (row) {
+                row.style.background = "#ffffff";
+                const dot = row.querySelector("div[style*='border-radius: 50%']");
+                if (dot) dot.style.background = "#cbd5e1";
+                const btn = row.querySelector("button[onclick*='markSingleRead']");
+                if (btn) btn.remove();
+            }
+        }
+    })
+    .catch(console.error);
+}
+
+function handleMarkAllRead(e) {
+    e.preventDefault();
+    const csrfToken = "{{ admin_csrf_token() }}";
+    fetch("/admin/api/notifications/read-all", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfToken
+        },
+        body: JSON.stringify({ csrf_token: csrfToken })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        }
+    })
+    .catch(console.error);
+}
+</script>
+{% endblock %}

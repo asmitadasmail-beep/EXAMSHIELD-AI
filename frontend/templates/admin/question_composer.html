@@ -1,0 +1,2169 @@
+{% extends "admin/layout.html" %}
+
+{% block extra_head %}
+<!-- KaTeX Mathematical Notation -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+
+<style>
+/* Smart Question Composer Styles */
+:root {
+    --composer-primary: #2563eb;
+    --composer-primary-hover: #1d4ed8;
+    --composer-primary-light: #eff6ff;
+    --composer-border: #e2e8f0;
+    --composer-card-bg: #ffffff;
+    --composer-bg-panel: #f8fafc;
+    --composer-text-main: #0f172a;
+    --composer-text-muted: #64748b;
+    --composer-success: #16a34a;
+    --composer-warning: #d97706;
+    --composer-danger: #dc2626;
+}
+
+.composer-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 65px);
+    overflow: hidden;
+    background: #f1f5f9;
+}
+
+/* Control Topbar */
+.composer-topbar {
+    background: #ffffff;
+    border-bottom: 1px solid var(--composer-border);
+    padding: 0.65rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-shrink: 0;
+    z-index: 10;
+}
+
+.composer-title-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+}
+
+.composer-title-input {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--composer-text-main);
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 4px 8px;
+    background: transparent;
+    transition: all 0.2s;
+    width: 320px;
+}
+.composer-title-input:hover, .composer-title-input:focus {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    outline: none;
+}
+
+.composer-subject-select {
+    padding: 5px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: var(--composer-text-main);
+    background: #ffffff;
+}
+
+.composer-stats-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.stat-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 16px;
+    background: #f1f5f9;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+}
+.stat-chip.accent {
+    background: var(--composer-primary-light);
+    color: var(--composer-primary);
+    border-color: #bfdbfe;
+}
+.stat-chip.ai-chip {
+    background: linear-gradient(135deg, #eff6ff, #f0fdf4);
+    border-color: #bbf7d0;
+    color: #15803d;
+}
+
+.composer-actions-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.composer-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border: 1px solid transparent;
+    white-space: nowrap;
+}
+.composer-btn-secondary {
+    background: #ffffff;
+    border-color: #cbd5e1;
+    color: #334155;
+}
+.composer-btn-secondary:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+}
+.composer-btn-primary {
+    background: var(--composer-primary);
+    color: #ffffff;
+}
+.composer-btn-primary:hover {
+    background: var(--composer-primary-hover);
+}
+.composer-btn-success {
+    background: #16a34a;
+    color: #ffffff;
+}
+.composer-btn-success:hover {
+    background: #15803d;
+}
+
+/* Mode Switcher Tabs */
+.composer-mode-nav {
+    background: #ffffff;
+    border-bottom: 1px solid var(--composer-border);
+    padding: 0 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-shrink: 0;
+}
+.mode-tab-btn {
+    padding: 10px 4px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #64748b;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+.mode-tab-btn:hover {
+    color: var(--composer-primary);
+}
+.mode-tab-btn.active {
+    color: var(--composer-primary);
+    border-bottom-color: var(--composer-primary);
+}
+
+/* 3-Panel Main Area */
+.composer-workspace {
+    display: grid;
+    grid-template-columns: 310px minmax(0, 1fr) 320px;
+    flex: 1;
+    min-height: 0;
+    transition: all 0.2s ease;
+}
+
+/* Distraction-Free Workspace Mode */
+.composer-workspace.distraction-free {
+    grid-template-columns: 0 minmax(0, 1fr) 0;
+}
+.composer-workspace.distraction-free .panel-left,
+.composer-workspace.distraction-free .panel-right {
+    display: none;
+}
+.composer-workspace.distraction-free .panel-center {
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* Left Panel: Outline & Sections */
+.panel-left {
+    background: #ffffff;
+    border-right: 1px solid var(--composer-border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.panel-header {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--composer-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fafbfc;
+}
+.panel-header h3 {
+    margin: 0;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.questions-filter-bar {
+    padding: 6px 10px;
+    background: #f8fafc;
+    border-bottom: 1px solid var(--composer-border);
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+}
+.filter-pill {
+    padding: 3px 8px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    border-radius: 12px;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    cursor: pointer;
+    color: #475569;
+}
+.filter-pill.active {
+    background: var(--composer-primary);
+    color: #ffffff;
+    border-color: var(--composer-primary);
+}
+
+.questions-tree-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.section-group {
+    margin-bottom: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #fafbfc;
+    overflow: hidden;
+}
+.section-header {
+    padding: 8px 10px;
+    background: #f1f5f9;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #334155;
+    cursor: pointer;
+}
+.section-title-input {
+    background: transparent;
+    border: 1px dashed transparent;
+    font-weight: 700;
+    font-size: 0.82rem;
+    color: #1e293b;
+    padding: 2px 4px;
+    border-radius: 4px;
+    width: 140px;
+}
+.section-title-input:focus {
+    background: #ffffff;
+    border-color: #94a3b8;
+    outline: none;
+}
+
+.question-nav-item {
+    padding: 8px 10px;
+    border-bottom: 1px solid #f1f5f9;
+    background: #ffffff;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+.question-nav-item:hover {
+    background: #f8fafc;
+}
+.question-nav-item.active {
+    background: #eff6ff;
+    border-left: 3px solid var(--composer-primary);
+}
+.q-num-badge {
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    background: #e2e8f0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #334155;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.question-nav-item.active .q-num-badge {
+    background: var(--composer-primary);
+    color: #ffffff;
+}
+.q-info-block {
+    flex: 1;
+    min-width: 0;
+}
+.q-snippet {
+    font-size: 0.8rem;
+    color: #334155;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+}
+.q-submeta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 3px;
+    font-size: 0.7rem;
+    color: #64748b;
+}
+
+.panel-footer-actions {
+    padding: 8px 10px;
+    border-top: 1px solid var(--composer-border);
+    background: #ffffff;
+    display: flex;
+    gap: 6px;
+}
+
+/* Centre Panel: Main Question Editor */
+.panel-center {
+    background: #f8fafc;
+    overflow-y: auto;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.editor-surface-card {
+    background: #ffffff;
+    border: 1px solid var(--composer-border);
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+/* Rich-Text Toolbar */
+.rich-toolbar {
+    padding: 6px 10px;
+    background: #fafbfc;
+    border-bottom: 1px solid var(--composer-border);
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+.tb-btn {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #475569;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+.tb-btn:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+.tb-divider {
+    width: 1px;
+    height: 20px;
+    background: #cbd5e1;
+    margin: 0 4px;
+}
+
+.statement-textarea {
+    width: 100%;
+    min-height: 140px;
+    padding: 12px 14px;
+    border: none;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #1e293b;
+    resize: vertical;
+    outline: none;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+/* Live Math/Formula Preview Bar */
+.math-preview-bar {
+    padding: 8px 12px;
+    background: #f8fafc;
+    border-top: 1px dashed var(--composer-border);
+    font-size: 0.88rem;
+    color: #334155;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.math-preview-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #64748b;
+}
+
+/* Options Builder Section */
+.options-builder-container {
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--composer-border);
+    background: #ffffff;
+}
+.options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+}
+.option-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background: #ffffff;
+    transition: all 0.15s;
+}
+.option-row.is-correct {
+    border-color: #86efac;
+    background: #f0fdf4;
+}
+.opt-label-badge {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.option-row.is-correct .opt-label-badge {
+    background: #22c55e;
+    color: #ffffff;
+}
+.opt-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 0.88rem;
+    color: #1e293b;
+    outline: none;
+    padding: 4px;
+}
+.opt-remove-btn {
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 2px 6px;
+}
+.opt-remove-btn:hover {
+    color: #ef4444;
+}
+
+/* True / False Interactive Cards */
+.tf-builder-cards {
+    display: flex;
+    gap: 1rem;
+    margin-top: 8px;
+}
+.tf-card {
+    flex: 1;
+    padding: 1.25rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #ffffff;
+    color: #334155;
+}
+.tf-card:hover {
+    border-color: #94a3b8;
+}
+.tf-card.selected {
+    border-color: #22c55e;
+    background: #f0fdf4;
+    color: #15803d;
+}
+
+/* Numerical & Short Answer Boxes */
+.specialized-input-card {
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--composer-border);
+    background: #fafbfc;
+}
+
+/* Right Panel: Question Properties */
+.panel-right {
+    background: #ffffff;
+    border-left: 1px solid var(--composer-border);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+.prop-group {
+    padding: 1rem;
+    border-bottom: 1px solid var(--composer-border);
+}
+.prop-label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 6px;
+}
+.prop-control {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: #1e293b;
+    background: #ffffff;
+    box-sizing: border-box;
+}
+.prop-control:focus {
+    border-color: var(--composer-primary);
+    outline: none;
+}
+
+/* Review Status Banner */
+.review-banner {
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    margin-top: 8px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+.review-banner.needs-review {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    color: #92400e;
+}
+.review-banner.approved {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #166534;
+}
+
+/* Bulk Entry & Document Import Panes */
+.composer-full-tab-pane {
+    display: none;
+    flex: 1;
+    overflow-y: auto;
+    padding: 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+    width: 100%;
+}
+.composer-full-tab-pane.active {
+    display: block;
+}
+
+.dropzone-box {
+    border: 2px dashed #94a3b8;
+    border-radius: 12px;
+    padding: 3rem 2rem;
+    text-align: center;
+    background: #ffffff;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.dropzone-box:hover, .dropzone-box.dragover {
+    border-color: var(--composer-primary);
+    background: #f8fafc;
+}
+.dropzone-icon {
+    width: 52px;
+    height: 52px;
+    color: var(--composer-primary);
+    margin-bottom: 12px;
+}
+
+/* Math Palette Drawer */
+.math-palette-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--composer-border);
+    width: 480px;
+    max-width: 95vw;
+    z-index: 1000;
+}
+.math-palette-modal.open {
+    display: block;
+}
+.math-palette-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 1rem;
+    max-height: 280px;
+    overflow-y: auto;
+}
+.math-symbol-btn {
+    padding: 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background: #ffffff;
+    cursor: pointer;
+    font-size: 1rem;
+    text-align: center;
+    transition: all 0.15s;
+}
+.math-symbol-btn:hover {
+    background: #eff6ff;
+    border-color: #3b82f6;
+}
+
+/* Modal Backdrops */
+.composer-modal-overlay {
+    display: none !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(2px);
+    z-index: 999;
+}
+.composer-modal-overlay.open {
+    display: block !important;
+}
+.math-palette-modal {
+    display: none !important;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25);
+    z-index: 1000;
+    width: 480px;
+    max-width: 90vw;
+}
+.math-palette-modal.open {
+    display: block !important;
+}
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<div class="composer-container">
+    <!-- Top Control Bar -->
+    <header class="composer-topbar">
+        <div class="composer-title-group">
+            <input type="text" id="composerExamTitle" class="composer-title-input" value="Comprehensive Assessment 2026" placeholder="Examination Title..." title="Click to rename examination">
+            <select id="composerSubject" class="composer-subject-select" title="Select Academic Subject">
+                {% for sub in subjects %}
+                <option value="{{ sub.subject_id }}">{{ sub.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="composer-stats-bar">
+            <span class="stat-chip accent"><strong id="statTotalQuestions">0</strong> Questions</span>
+            <span class="stat-chip"><strong id="statTotalMarks">0.0</strong> Total Marks</span>
+            <span class="stat-chip"><strong id="statTotalSections">1</strong> Section</span>
+            <span class="stat-chip ai-chip" title="{{ ai_status.description }}">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z"/></svg>
+                <span>{{ ai_status.provider }}</span>
+            </span>
+            <span id="draftSaveStatus" style="font-size: 0.75rem; color: #64748b; margin-left: 6px;">Draft saved</span>
+        </div>
+
+        <div class="composer-actions-bar">
+            <button type="button" class="composer-btn composer-btn-secondary" id="btnToggleDistraction" title="Toggle Distraction-Free Focus Mode (Alt+Z)">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                <span>Focus</span>
+            </button>
+            <button type="button" class="composer-btn composer-btn-secondary" id="btnOpenDrafts" title="View Saved Drafts">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                <span>Drafts</span>
+            </button>
+            <button type="button" class="composer-btn composer-btn-secondary" id="btnExportBank" title="Export Approved Questions to Question Bank">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+                <span>Export to Bank</span>
+            </button>
+            <button type="button" class="composer-btn composer-btn-primary" id="btnCreateExamModal" title="Build & Publish/Schedule Complete Examination">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                <span>Create Examination</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Mode Selector Navigation -->
+    <nav class="composer-mode-nav">
+        <button type="button" class="mode-tab-btn active" data-tab="mode-editor">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            <span>Write Questions (Editor)</span>
+        </button>
+        <button type="button" class="mode-tab-btn" data-tab="mode-bulk">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <span>Bulk Text Entry</span>
+        </button>
+        <button type="button" class="mode-tab-btn" data-tab="mode-import">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+            <span>Import Question Paper (PDF/DOCX/OCR)</span>
+        </button>
+        <button type="button" class="mode-tab-btn" data-tab="mode-material">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            <span>Extract from Study Material</span>
+        </button>
+    </nav>
+
+    <!-- TAB 1: 3-PANEL EDITOR WORKSPACE -->
+    <div id="mode-editor" class="composer-workspace">
+        <!-- Left Panel: Outline & Sections -->
+        <aside class="panel-left">
+            <div class="panel-header">
+                <h3>Outline & Sections</h3>
+                <button type="button" class="composer-btn composer-btn-secondary" id="btnAddSection" style="padding: 3px 8px; font-size: 0.75rem;">+ Section</button>
+            </div>
+            <div class="questions-filter-bar">
+                <button type="button" class="filter-pill active" data-filter="all">All (<span id="countAll">0</span>)</button>
+                <button type="button" class="filter-pill" data-filter="needs_review">Review (<span id="countReview">0</span>)</button>
+                <button type="button" class="filter-pill" data-filter="approved">Approved (<span id="countApproved">0</span>)</button>
+            </div>
+            <div class="questions-tree-scroll" id="questionsTreeContainer">
+                <!-- Dynamically populated sections & questions -->
+            </div>
+            <div class="panel-footer-actions">
+                <button type="button" class="composer-btn composer-btn-primary" id="btnAddQuestion" style="flex:1;">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <span>Add Question</span>
+                </button>
+                <button type="button" class="composer-btn composer-btn-secondary" id="btnApproveAll" title="Approve all valid questions">
+                    <span>Approve All</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Centre Panel: Focus Question Editor -->
+        <main class="panel-center">
+            <div class="editor-surface-card">
+                <!-- Rich-Text Controls Toolbar -->
+                <div class="rich-toolbar">
+                    <button type="button" class="tb-btn" onclick="insertFormat('**', '**')" title="Bold (Ctrl+B)"><strong>B</strong></button>
+                    <button type="button" class="tb-btn" onclick="insertFormat('*', '*')" title="Italic (Ctrl+I)"><em>I</em></button>
+                    <button type="button" class="tb-btn" onclick="insertFormat('<u>', '</u>')" title="Underline"><u>U</u></button>
+                    <div class="tb-divider"></div>
+                    <button type="button" class="tb-btn" onclick="insertFormat('## ', '')" title="Heading 2">H2</button>
+                    <button type="button" class="tb-btn" onclick="insertFormat('### ', '')" title="Heading 3">H3</button>
+                    <div class="tb-divider"></div>
+                    <button type="button" class="tb-btn" id="btnOpenMathModal" title="Insert Mathematical / LaTeX Formula">
+                        <span style="font-family: serif; font-size: 1.05rem;">&fnof;(x)</span>
+                    </button>
+                    <button type="button" class="tb-btn" onclick="insertFormat('```\n', '\n```')" title="Code Snippet">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                    </button>
+                    <button type="button" class="tb-btn" onclick="insertTableTemplate()" title="Insert Table">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+                    </button>
+                    <button type="button" class="tb-btn" id="btnTriggerImageUpload" title="Upload & Insert Image">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    </button>
+                    <input type="file" id="imageUploadInput" accept="image/*" style="display:none;">
+                </div>
+
+                <!-- Main Statement Textarea -->
+                <textarea id="activeQuestionStatement" class="statement-textarea" placeholder="Type question statement here... Supports LaTeX formulas (e.g. $x^2 + y^2 = r^2$), code snippets, and markdown."></textarea>
+
+                <!-- Live LaTeX Preview -->
+                <div class="math-preview-bar" id="mathPreviewContainer">
+                    <span class="math-preview-label">Live Preview:</span>
+                    <div id="mathPreviewOutput" style="flex:1;">Type math formulas using $formula$ to preview notation.</div>
+                </div>
+
+                <!-- Dynamic Answer Options Builder -->
+                <div class="options-builder-container" id="optionsBuilderSection">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <label class="prop-label" style="margin:0;">Answer Options</label>
+                        <span style="font-size: 0.75rem; color:#64748b;">Select radio/checkbox to mark correct answer(s)</span>
+                    </div>
+                    <div class="options-list" id="optionsListContainer">
+                        <!-- Options generated dynamically -->
+                    </div>
+                    <button type="button" class="composer-btn composer-btn-secondary" id="btnAddOptionBtn" style="margin-top:10px; font-size:0.8rem; padding:4px 10px;">+ Add Option</button>
+                </div>
+
+                <!-- True / False Card Builder -->
+                <div class="options-builder-container" id="tfBuilderSection" style="display:none;">
+                    <label class="prop-label">Select Correct Statement Evaluation</label>
+                    <div class="tf-builder-cards">
+                        <div class="tf-card" id="tfCardTrue" onclick="selectTrueFalse(true)">True</div>
+                        <div class="tf-card" id="tfCardFalse" onclick="selectTrueFalse(false)">False</div>
+                    </div>
+                </div>
+
+                <!-- Fill in the blank / Numerical / Subjective Rubric Box -->
+                <div class="specialized-input-card" id="specializedInputSection" style="display:none;">
+                    <label class="prop-label" id="specializedInputLabel">Correct Answer / Model Answer</label>
+                    <textarea id="activeCorrectAnswerText" class="prop-control" rows="3" placeholder="Enter correct answer, numerical value, or model answer rubric..."></textarea>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Panel: Properties & Review -->
+        <aside class="panel-right">
+            <div class="panel-header">
+                <h3>Question Properties</h3>
+            </div>
+            <div class="prop-group">
+                <label class="prop-label">Question Type</label>
+                <select id="activeQuestionType" class="prop-control">
+                    <option value="mcq">Multiple Choice Question (MCQ)</option>
+                    <option value="multiple_select">Multiple Select Question (MSQ)</option>
+                    <option value="true_false">True / False</option>
+                    <option value="fill_blank">Fill in the Blanks</option>
+                    <option value="short_answer">Short Answer</option>
+                    <option value="long_answer">Long Answer / Essay</option>
+                    <option value="numerical">Numerical Calculation</option>
+                    <option value="descriptive">Descriptive / Analytical</option>
+                </select>
+            </div>
+            <div class="prop-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div>
+                    <label class="prop-label">Marks</label>
+                    <input type="number" id="activeMarks" class="prop-control" min="0.5" step="0.5" value="1.0">
+                </div>
+                <div>
+                    <label class="prop-label">Negative Marks</label>
+                    <input type="number" id="activeNegativeMarks" class="prop-control" min="0" step="0.25" value="0.0">
+                </div>
+            </div>
+            <div class="prop-group">
+                <label class="prop-label">Difficulty Level</label>
+                <select id="activeDifficulty" class="prop-control">
+                    <option value="Easy">Easy</option>
+                    <option value="Medium" selected>Medium</option>
+                    <option value="Hard">Hard</option>
+                </select>
+            </div>
+            <div class="prop-group">
+                <label class="prop-label">Section Assignment</label>
+                <select id="activeSectionSelect" class="prop-control">
+                    <!-- Populated dynamically -->
+                </select>
+            </div>
+            <div class="prop-group">
+                <label class="prop-label">Topic / Chapter</label>
+                <input type="text" id="activeTopic" class="prop-control" placeholder="e.g. Operating Systems, Chapter 3">
+            </div>
+            <div class="prop-group">
+                <label class="prop-label">Explanation & Rationale</label>
+                <textarea id="activeExplanation" class="prop-control" rows="3" placeholder="Explain the rationale behind the correct answer..."></textarea>
+            </div>
+            <div class="prop-group">
+                <label class="prop-label">Review Status & Confidence</label>
+                <div id="reviewBanner" class="review-banner approved">
+                    <span>Approved & Ready</span>
+                </div>
+                <div id="groundingSourceBox" style="font-size:0.75rem; color:#64748b; margin-top:6px; display:none;">
+                    <strong>Source Citation:</strong> <span id="groundingSourceRef">-</span>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- TAB 2: BULK TEXT ENTRY MODE -->
+    <div id="mode-bulk" class="composer-full-tab-pane">
+        <div class="editor-surface-card" style="padding: 1.5rem;">
+            <h2 style="font-size: 1.25rem; margin-top: 0; color: #1e293b;">Bulk Question Entry</h2>
+            <p style="font-size: 0.88rem; color: #64748b;">Paste multiple questions below. The parser automatically detects question numbers, options, answer keys, marks, and explanations.</p>
+            
+            <textarea id="bulkPasteTextarea" class="statement-textarea" style="border:1px solid #cbd5e1; border-radius:6px; min-height:280px; font-family:monospace;" placeholder="Example:
+Q1. What is the capital of India?
+A. Mumbai
+B. New Delhi
+C. Kolkata
+D. Chennai
+Answer: B
+Marks: 2
+
+Q2. What is 5 × 5?
+A. 10
+B. 15
+C. 20
+D. 25
+Answer: D
+Marks: 1"></textarea>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem;">
+                <span style="font-size:0.8rem; color:#64748b;">Supports MCQ, True/False, Short Answer, Fill-in-blanks, and Numerical formats.</span>
+                <button type="button" class="composer-btn composer-btn-primary" id="btnParseBulkText">Parse Questions &rarr;</button>
+            </div>
+
+            <!-- Live Bulk Parse Results Preview -->
+            <div id="bulkParsePreviewContainer" style="margin-top: 1.5rem; display:none;">
+                <h3 style="font-size:1rem; color:#1e293b; border-top:1px solid #e2e8f0; padding-top:1rem;">Detected Questions (<span id="bulkParsedCount">0</span>)</h3>
+                <div id="bulkParsedList" style="display:flex; flex-direction:column; gap:8px; margin: 12px 0;"></div>
+                <button type="button" class="composer-btn composer-btn-success" id="btnImportBulkToComposer">Import All into Composer &rarr;</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 3: IMPORT QUESTION PAPER (PDF/DOCX/OCR) -->
+    <div id="mode-import" class="composer-full-tab-pane">
+        <div class="editor-surface-card" style="padding: 2rem;">
+            <h2 style="font-size: 1.25rem; margin-top: 0; color: #1e293b;">Import Existing Question Paper</h2>
+            <p style="font-size: 0.88rem; color: #64748b;">Upload PDF, DOCX, TXT, or scanned image files. Questions, sections, options, and marks will be extracted automatically.</p>
+
+            <div class="dropzone-box" id="paperDropzone">
+                <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <h3 style="font-size:1.05rem; margin:0 0 6px 0; color:#1e293b;">Drag and drop question paper document</h3>
+                <p style="font-size:0.85rem; color:#64748b; margin:0 0 12px 0;">PDF, DOCX, TXT, PNG, or JPG (up to 25 MB)</p>
+                <button type="button" class="composer-btn composer-btn-secondary" onclick="document.getElementById('paperFileInput').click()">Browse Files</button>
+                <input type="file" id="paperFileInput" accept=".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg" style="display:none;">
+            </div>
+
+            <div id="uploadProgressBox" style="margin-top:1.5rem; display:none;">
+                <div style="display:flex; justify-content:space-between; font-size:0.82rem; margin-bottom:4px;">
+                    <span id="uploadFileName">filename.pdf</span>
+                    <span id="uploadStatusText">Extracting questions...</span>
+                </div>
+                <div style="height:6px; background:#e2e8f0; border-radius:3px; overflow:hidden;">
+                    <div id="uploadProgressBar" style="width:50%; height:100%; background:var(--composer-primary); transition: width 0.3s;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 4: EXTRACT FROM STUDY MATERIAL -->
+    <div id="mode-material" class="composer-full-tab-pane">
+        <div class="editor-surface-card" style="padding: 2rem;">
+            <h2 style="font-size: 1.25rem; margin-top: 0; color: #1e293b;">Generate Grounded Questions from Study Material</h2>
+            <p style="font-size: 0.88rem; color: #64748b;">Upload lecture notes, presentation slides, or textbook excerpts. Questions will be generated strictly grounded in the material with source citations.</p>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div>
+                    <label class="prop-label">Number of Questions</label>
+                    <input type="number" id="genNumQuestions" class="prop-control" value="5" min="1" max="25">
+                </div>
+                <div>
+                    <label class="prop-label">Difficulty</label>
+                    <select id="genDifficulty" class="prop-control">
+                        <option value="Easy">Easy</option>
+                        <option value="Medium" selected>Medium</option>
+                        <option value="Hard">Hard</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label class="prop-label">Allowed Question Types</label>
+                <div style="display:flex; gap: 1rem; flex-wrap:wrap; font-size:0.85rem;">
+                    <label><input type="checkbox" class="gen-qtype" value="mcq" checked> MCQ</label>
+                    <label><input type="checkbox" class="gen-qtype" value="true_false" checked> True/False</label>
+                    <label><input type="checkbox" class="gen-qtype" value="short_answer" checked> Short Answer</label>
+                    <label><input type="checkbox" class="gen-qtype" value="fill_blank" checked> Fill in Blanks</label>
+                    <label><input type="checkbox" class="gen-qtype" value="long_answer"> Long Answer</label>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label class="prop-label">Paste Study Material / Notes (or Upload File Below)</label>
+                <textarea id="studyMaterialText" class="statement-textarea" style="border:1px solid #cbd5e1; border-radius:6px; min-height:180px;" placeholder="Paste lecture notes, textbook chapters, or presentation text here..."></textarea>
+            </div>
+
+            <button type="button" class="composer-btn composer-btn-primary" id="btnGenerateGroundedQuestions">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z"/></svg>
+                <span>Generate Grounded Questions</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: LaTeX Math Palette -->
+<div class="composer-modal-overlay" id="mathModalOverlay" onclick="closeMathModal()" style="display: none;"></div>
+<div class="math-palette-modal" id="mathPaletteModal" style="display: none;">
+    <div style="padding: 1rem; border-bottom: 1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="margin:0; font-size:1rem; color:#1e293b;">Mathematical & Scientific Symbols</h3>
+        <button type="button" style="border:none; background:transparent; cursor:pointer; font-size:1.1rem;" onclick="closeMathModal()">✕</button>
+    </div>
+    <div class="math-palette-grid">
+        <button class="math-symbol-btn" onclick="insertMathFormula('\\frac{a}{b}')">$$\frac{a}{b}$$</button>
+        <button class="math-symbol-btn" onclick="insertMathFormula('\\sqrt{x}')">$$\sqrt{x}$$</button>
+        <button class="math-symbol-btn" onclick="insertMathFormula('x^2')">$$x^2$$</button>
+        <button class="math-symbol-btn" onclick="insertMathFormula('x_i')">$$x_i$$</button>
+        <button class="math-symbol-btn" onclick="insertMathFormula('\\sum_{i=1}^{n}')">$$\sum$$</button>
+        <button class="math-symbol-btn" onclick="insertMathFormula('\\int_{a}^{b}')">$$\int$$</button>
+        <button class="math-symbol-btn" onclick="insertMathFormula('\\pi')">$$\pi$$</button>
+        <button class="math-symbol-btn" onclick="insertMathFormula('\\pm')">$$\pm$$</button>
+        <button class="math-symbol-btn" onclick="insertMathFormula('\\le')">$$\le$$</button>
+        <button class="math-symbol-btn" onclick="insertMathFormula('\\ge')">$$\ge$$</button>
+        <button class="math-symbol-btn" onclick="insertMathFormula('\\approx')">$$\approx$$</button>
+        <button class="math-symbol-btn" onclick="insertMathFormula('\\infty')">$$\infty$$</button>
+    </div>
+</div>
+
+<!-- Modal: Create Examination -->
+<div class="composer-modal-overlay" id="examModalOverlay" onclick="closeCreateExamModal()" style="display: none;"></div>
+<div class="math-palette-modal" id="createExamModal" style="width: 540px; display: none;">
+    <div style="padding: 1.25rem; border-bottom: 1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="margin:0; font-size:1.1rem; color:#1e293b;">Build & Publish Examination</h3>
+        <button type="button" style="border:none; background:transparent; cursor:pointer; font-size:1.1rem;" onclick="closeCreateExamModal()">✕</button>
+    </div>
+    <div style="padding: 1.25rem; max-height: 400px; overflow-y: auto;">
+        <div style="margin-bottom: 12px;">
+            <label class="prop-label">Department / Cohort</label>
+            <input type="text" id="modalDepartment" class="prop-control" value="Computer Science & Engineering">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+            <div>
+                <label class="prop-label">Semester</label>
+                <input type="text" id="modalSemester" class="prop-control" value="Semester 5">
+            </div>
+            <div>
+                <label class="prop-label">Duration (Minutes)</label>
+                <input type="number" id="modalDuration" class="prop-control" value="1" min="1">
+            </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+            <div>
+                <label class="prop-label">Passing Marks</label>
+                <input type="number" id="modalPassMarks" class="prop-control" value="1" min="0">
+            </div>
+            <div>
+                <label class="prop-label">Status</label>
+                <select id="modalStatus" class="prop-control">
+                    <option value="published">Published (Visible to Students)</option>
+                    <option value="draft">Draft (Save & Edit Later)</option>
+                    <option value="scheduled">Scheduled Window</option>
+                </select>
+            </div>
+        </div>
+        <div style="margin-bottom: 12px;">
+            <label class="prop-label">Examination Instructions</label>
+            <textarea id="modalInstructions" class="prop-control" rows="2">All questions are compulsory. Follow standard proctoring conduct.</textarea>
+        </div>
+    </div>
+    <div style="padding: 1rem; border-top: 1px solid #e2e8f0; display:flex; justify-content:flex-end; gap:8px;">
+        <button type="button" class="composer-btn composer-btn-secondary" onclick="closeCreateExamModal()">Cancel</button>
+        <button type="button" class="composer-btn composer-btn-primary" id="btnConfirmCreateExam">Confirm & Build Examination &rarr;</button>
+    </div>
+</div>
+
+<!-- Modal: Saved Drafts -->
+<div class="composer-modal-overlay" id="draftsModalOverlay" onclick="closeDraftsModal()" style="display: none;"></div>
+<div class="math-palette-modal" id="draftsModal" style="width: 580px; display: none;">
+    <div style="padding: 1.25rem; border-bottom: 1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="margin:0; font-size:1.1rem; color:#1e293b;">Saved Composer Drafts</h3>
+        <button type="button" style="border:none; background:transparent; cursor:pointer; font-size:1.1rem;" onclick="closeDraftsModal()">✕</button>
+    </div>
+    <div style="padding: 1.25rem; max-height: 400px; overflow-y: auto;" id="draftsModalList">
+        <p style="color:#64748b; font-size:0.88rem;">Loading drafts...</p>
+    </div>
+    <div style="padding: 0.85rem 1.25rem; border-top: 1px solid #e2e8f0; display:flex; justify-content:flex-end;">
+        <button type="button" class="composer-btn composer-btn-secondary" onclick="closeDraftsModal()">Close</button>
+    </div>
+</div>
+
+<script>
+// =============================================================================
+// SMART QUESTION COMPOSER - FRONTEND ENGINE
+// =============================================================================
+
+const CSRF_TOKEN = "{{ admin_csrf_token() }}";
+
+// Application State
+let autoSaveTimer = null;
+let bulkParsedResults = [];
+
+let composerState = {
+    draftId: null,
+    title: "Comprehensive Assessment 2026",
+    subjectId: 1,
+    sections: [
+        { section_id: 'sec_1', name: 'Section A', instructions: 'Objective Assessment', sort_order: 0 }
+    ],
+    questions: [],
+    activeIndex: 0,
+    filter: 'all',
+    distractionFree: false
+};
+
+// Initialize with a default sample question
+composerState.questions.push({
+    question_number: 1,
+    statement: "What is the primary function of an operating system kernel?",
+    question_type: "mcq",
+    marks: 2.0,
+    negative_marks: 0.5,
+    difficulty: "Medium",
+    topic: "Operating Systems",
+    section: "Section A",
+    options: [
+        { option_text: "Hardware abstraction and resource scheduling", is_correct: true, label: "A" },
+        { option_text: "Web browsing and internet communication", is_correct: false, label: "B" },
+        { option_text: "Compiling high-level programming languages", is_correct: false, label: "C" },
+        { option_text: "User interface graphics rendering", is_correct: false, label: "D" }
+    ],
+    correct_answer_text: "",
+    explanation: "The OS kernel manages system resources and provides a hardware abstraction layer.",
+    confidence: "high",
+    requires_review: false,
+    status: "approved"
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const titleEl = document.getElementById('composerExamTitle');
+    if (titleEl && titleEl.value) {
+        composerState.title = titleEl.value;
+    }
+    const subjEl = document.getElementById('composerSubject');
+    if (subjEl && subjEl.value) {
+        composerState.subjectId = parseInt(subjEl.value) || 1;
+    }
+
+    initModeTabs();
+    initEventListeners();
+    renderAll();
+    setupAutoSave();
+});
+
+// Mode Switching Tabs
+function initModeTabs() {
+    document.querySelectorAll('.mode-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.mode-tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.composer-full-tab-pane, .composer-workspace').forEach(p => p.style.display = 'none');
+            
+            btn.classList.add('active');
+            const targetId = btn.getAttribute('data-tab');
+            const targetEl = document.getElementById(targetId);
+            if (targetEl) {
+                targetEl.style.display = targetId === 'mode-editor' ? 'grid' : 'block';
+            }
+        });
+    });
+}
+
+function initEventListeners() {
+    // Topbar inputs
+    document.getElementById('composerExamTitle').addEventListener('input', (e) => {
+        composerState.title = e.target.value;
+        triggerDebouncedAutoSave();
+    });
+    document.getElementById('composerSubject').addEventListener('change', (e) => {
+        composerState.subjectId = parseInt(e.target.value);
+        triggerDebouncedAutoSave();
+    });
+
+    // Distraction-Free Mode Toggle
+    document.getElementById('btnToggleDistraction').addEventListener('click', toggleDistractionFree);
+
+    // Question Add & Section Add
+    document.getElementById('btnAddQuestion').addEventListener('click', addNewQuestion);
+    document.getElementById('btnAddSection').addEventListener('click', addNewSection);
+    document.getElementById('btnApproveAll').addEventListener('click', approveAllQuestions);
+
+    // Active Question Inputs Sync
+    document.getElementById('activeQuestionStatement').addEventListener('input', (e) => {
+        const q = getActiveQuestion();
+        if (q) {
+            q.statement = e.target.value;
+            renderMathPreview(q.statement);
+            updateQuestionCardSnippet(composerState.activeIndex);
+            triggerDebouncedAutoSave();
+        }
+    });
+
+    document.getElementById('activeQuestionType').addEventListener('change', (e) => {
+        const q = getActiveQuestion();
+        if (q) {
+            q.question_type = e.target.value;
+            renderOptionsBuilder(q);
+            renderPropertiesPanel(q);
+            updateQuestionCardSnippet(composerState.activeIndex);
+            triggerDebouncedAutoSave();
+        }
+    });
+
+    document.getElementById('activeMarks').addEventListener('input', (e) => {
+        const q = getActiveQuestion();
+        if (q) {
+            q.marks = parseFloat(e.target.value) || 1.0;
+            updateStatsBar();
+            triggerDebouncedAutoSave();
+        }
+    });
+
+    document.getElementById('activeNegativeMarks').addEventListener('input', (e) => {
+        const q = getActiveQuestion();
+        if (q) q.negative_marks = parseFloat(e.target.value) || 0.0;
+        triggerDebouncedAutoSave();
+    });
+
+    document.getElementById('activeDifficulty').addEventListener('change', (e) => {
+        const q = getActiveQuestion();
+        if (q) q.difficulty = e.target.value;
+        triggerDebouncedAutoSave();
+    });
+
+    document.getElementById('activeTopic').addEventListener('input', (e) => {
+        const q = getActiveQuestion();
+        if (q) q.topic = e.target.value;
+        triggerDebouncedAutoSave();
+    });
+
+    document.getElementById('activeExplanation').addEventListener('input', (e) => {
+        const q = getActiveQuestion();
+        if (q) q.explanation = e.target.value;
+        triggerDebouncedAutoSave();
+    });
+
+    document.getElementById('activeCorrectAnswerText').addEventListener('input', (e) => {
+        const q = getActiveQuestion();
+        if (q) q.correct_answer_text = e.target.value;
+        triggerDebouncedAutoSave();
+    });
+
+    document.getElementById('btnAddOptionBtn').addEventListener('click', () => {
+        const q = getActiveQuestion();
+        if (q && q.options) {
+            const nextLabel = String.fromCharCode(65 + q.options.length);
+            q.options.push({ option_text: `Option ${nextLabel}`, is_correct: false, label: nextLabel });
+            renderOptionsBuilder(q);
+            triggerDebouncedAutoSave();
+        }
+    });
+
+    // Modals & Action Handlers
+    document.getElementById('btnOpenMathModal').addEventListener('click', openMathModal);
+    document.getElementById('btnCreateExamModal').addEventListener('click', openCreateExamModal);
+    document.getElementById('btnConfirmCreateExam').addEventListener('click', confirmCreateExam);
+    document.getElementById('btnExportBank').addEventListener('click', exportApprovedToQuestionBank);
+    document.getElementById('btnOpenDrafts').addEventListener('click', openDraftsModal);
+
+    // Bulk text parse
+    document.getElementById('btnParseBulkText').addEventListener('click', handleParseBulkText);
+    document.getElementById('btnImportBulkToComposer').addEventListener('click', importBulkParsedQuestions);
+
+    // Document Upload & Dropzone
+    initDropzone();
+
+    // Image upload trigger
+    document.getElementById('btnTriggerImageUpload').addEventListener('click', () => {
+        document.getElementById('imageUploadInput').click();
+    });
+    document.getElementById('imageUploadInput').addEventListener('change', handleImageUpload);
+
+    // Study Material Grounded Generation
+    document.getElementById('btnGenerateGroundedQuestions').addEventListener('click', handleGenerateStudyMaterial);
+
+    // Keyboard Shortcuts
+    document.addEventListener('keydown', handleGlobalShortcuts);
+}
+
+// =============================================================================
+// RENDERING FUNCTIONS
+// =============================================================================
+
+function renderAll() {
+    renderSectionsAndQuestions();
+    loadActiveQuestion();
+    updateStatsBar();
+}
+
+function getActiveQuestion() {
+    return composerState.questions[composerState.activeIndex] || null;
+}
+
+function renderSectionsAndQuestions() {
+    const container = document.getElementById('questionsTreeContainer');
+    container.innerHTML = '';
+
+    composerState.sections.forEach(sec => {
+        const secDiv = document.createElement('div');
+        secDiv.className = 'section-group';
+
+        const secQuestions = composerState.questions.filter((q, idx) => {
+            q._globalIndex = idx;
+            return (q.section || 'Section A') === sec.name;
+        });
+
+        secDiv.innerHTML = `
+            <div class="section-header">
+                <input type="text" class="section-title-input" value="${sec.name}" onchange="renameSection('${sec.section_id}', this.value)">
+                <span>${secQuestions.length} Qs</span>
+            </div>
+            <div class="section-questions-list" id="sec_list_${sec.section_id}"></div>
+        `;
+
+        const qListEl = secDiv.querySelector(`#sec_list_${sec.section_id}`);
+        secQuestions.forEach(q => {
+            const isMatchFilter = composerState.filter === 'all' || q.status === composerState.filter;
+            if (!isMatchFilter) return;
+
+            const qItem = document.createElement('div');
+            qItem.className = `question-nav-item ${q._globalIndex === composerState.activeIndex ? 'active' : ''}`;
+            qItem.onclick = () => selectQuestion(q._globalIndex);
+
+            qItem.innerHTML = `
+                <div class="q-num-badge">${q.question_number}</div>
+                <div class="q-info-block">
+                    <div class="q-snippet">${escapeHtml(q.statement || 'Empty Question Statement')}</div>
+                    <div class="q-submeta">
+                        <span>${q.question_type.toUpperCase()}</span> &bull; 
+                        <span>${q.marks}M</span>
+                        ${q.requires_review ? '<span style="color:#d97706;" title="Requires teacher review">⚠️ Review</span>' : '<span style="color:#16a34a;">✓ OK</span>'}
+                    </div>
+                </div>
+            `;
+            qListEl.appendChild(qItem);
+        });
+
+        container.appendChild(secDiv);
+    });
+
+    // Populate Section select dropdown in right panel
+    const secSelect = document.getElementById('activeSectionSelect');
+    secSelect.innerHTML = '';
+    composerState.sections.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.name;
+        opt.textContent = s.name;
+        secSelect.appendChild(opt);
+    });
+}
+
+function loadActiveQuestion() {
+    const q = getActiveQuestion();
+    if (!q) return;
+
+    document.getElementById('activeQuestionStatement').value = q.statement || '';
+    document.getElementById('activeQuestionType').value = q.question_type || 'mcq';
+    document.getElementById('activeMarks').value = q.marks || 1.0;
+    document.getElementById('activeNegativeMarks').value = q.negative_marks || 0.0;
+    document.getElementById('activeDifficulty').value = q.difficulty || 'Medium';
+    document.getElementById('activeTopic').value = q.topic || '';
+    document.getElementById('activeExplanation').value = q.explanation || '';
+    document.getElementById('activeSectionSelect').value = q.section || composerState.sections[0].name;
+
+    renderMathPreview(q.statement);
+    renderOptionsBuilder(q);
+    renderPropertiesPanel(q);
+}
+
+function renderMathPreview(text) {
+    const out = document.getElementById('mathPreviewOutput');
+    if (!out) return;
+    if (!text || text.indexOf('$') === -1) {
+        out.textContent = text || 'Live preview will render LaTeX math formula here.';
+        return;
+    }
+    // Render with KaTeX
+    try {
+        let rendered = escapeHtml(text);
+        if (typeof katex !== 'undefined' && katex.renderToString) {
+            rendered = rendered.replace(/\$\$([^$]+)\$\$/g, (match, formula) => {
+                return katex.renderToString(formula, { displayMode: true, throwOnError: false });
+            });
+            rendered = rendered.replace(/\$([^$]+)\$/g, (match, formula) => {
+                return katex.renderToString(formula, { displayMode: false, throwOnError: false });
+            });
+        }
+        out.innerHTML = rendered;
+    } catch (e) {
+        out.textContent = text;
+    }
+}
+
+function renderOptionsBuilder(q) {
+    const optionsSection = document.getElementById('optionsBuilderSection');
+    const tfSection = document.getElementById('tfBuilderSection');
+    const specializedSection = document.getElementById('specializedInputSection');
+
+    optionsSection.style.display = 'none';
+    tfSection.style.display = 'none';
+    specializedSection.style.display = 'none';
+
+    if (q.question_type === 'mcq' || q.question_type === 'multiple_select') {
+        optionsSection.style.display = 'block';
+        const list = document.getElementById('optionsListContainer');
+        list.innerHTML = '';
+        if (!q.options || q.options.length === 0) {
+            q.options = [
+                { option_text: 'Option A', is_correct: true, label: 'A' },
+                { option_text: 'Option B', is_correct: false, label: 'B' }
+            ];
+        }
+
+        const isMulti = q.question_type === 'multiple_select';
+        q.options.forEach((opt, idx) => {
+            const optRow = document.createElement('div');
+            optRow.className = `option-row ${opt.is_correct ? 'is-correct' : ''}`;
+            const inputType = isMulti ? 'checkbox' : 'radio';
+
+            optRow.innerHTML = `
+                <input type="${inputType}" name="correct_opt" ${opt.is_correct ? 'checked' : ''} onchange="toggleOptionCorrect(${idx}, this.checked, ${isMulti})">
+                <span class="opt-label-badge">${opt.label || String.fromCharCode(65 + idx)}</span>
+                <input type="text" class="opt-input" value="${escapeHtml(opt.option_text)}" oninput="updateOptionText(${idx}, this.value)">
+                <button type="button" class="opt-remove-btn" onclick="removeOption(${idx})">&times;</button>
+            `;
+            list.appendChild(optRow);
+        });
+    } else if (q.question_type === 'true_false') {
+        tfSection.style.display = 'block';
+        const isTrue = q.correct_answer_text === 'True' || (q.options && q.options[0] && q.options[0].is_correct);
+        document.getElementById('tfCardTrue').className = `tf-card ${isTrue ? 'selected' : ''}`;
+        document.getElementById('tfCardFalse').className = `tf-card ${!isTrue ? 'selected' : ''}`;
+    } else {
+        specializedSection.style.display = 'block';
+        const label = document.getElementById('specializedInputLabel');
+        if (q.question_type === 'fill_blank') label.textContent = 'Correct Word / Text (Fill in Blank)';
+        else if (q.question_type === 'numerical') label.textContent = 'Correct Numerical Value & Units';
+        else label.textContent = 'Model Answer & Evaluation Rubric';
+        document.getElementById('activeCorrectAnswerText').value = q.correct_answer_text || '';
+    }
+}
+
+function renderPropertiesPanel(q) {
+    const banner = document.getElementById('reviewBanner');
+    if (q.requires_review) {
+        banner.className = 'review-banner needs-review';
+        const reasons = (q.review_reasons && q.review_reasons.length > 0) ? q.review_reasons.join(', ') : 'Requires verification';
+        banner.innerHTML = `<span>⚠️ ${reasons}</span> <button type="button" class="composer-btn composer-btn-secondary" style="padding:2px 6px; font-size:0.7rem; margin-left:auto;" onclick="approveActiveQuestion()">Approve</button>`;
+    } else {
+        banner.className = 'review-banner approved';
+        banner.innerHTML = '<span>✓ Approved & Verified</span>';
+    }
+
+    const citationBox = document.getElementById('groundingSourceBox');
+    if (q.source_reference) {
+        citationBox.style.display = 'block';
+        document.getElementById('groundingSourceRef').textContent = q.source_reference;
+    } else {
+        citationBox.style.display = 'none';
+    }
+}
+
+function updateStatsBar() {
+    let totalMarks = 0;
+    let reviewCount = 0;
+    let approvedCount = 0;
+
+    composerState.questions.forEach(q => {
+        totalMarks += parseFloat(q.marks) || 1.0;
+        if (q.requires_review) reviewCount++;
+        else approvedCount++;
+    });
+
+    document.getElementById('statTotalQuestions').textContent = composerState.questions.length;
+    document.getElementById('statTotalMarks').textContent = totalMarks.toFixed(1);
+    document.getElementById('statTotalSections').textContent = composerState.sections.length;
+
+    document.getElementById('countAll').textContent = composerState.questions.length;
+    document.getElementById('countReview').textContent = reviewCount;
+    document.getElementById('countApproved').textContent = approvedCount;
+}
+
+// =============================================================================
+// QUESTION & SECTION ACTIONS
+// =============================================================================
+
+function selectQuestion(index) {
+    composerState.activeIndex = index;
+    renderSectionsAndQuestions();
+    loadActiveQuestion();
+}
+
+function addNewQuestion() {
+    const nextNum = composerState.questions.length + 1;
+    const currentSec = composerState.sections[0].name;
+    composerState.questions.push({
+        question_number: nextNum,
+        statement: "",
+        question_type: "mcq",
+        marks: 1.0,
+        negative_marks: 0.0,
+        difficulty: "Medium",
+        topic: "General",
+        section: currentSec,
+        options: [
+            { option_text: "Option A", is_correct: true, label: "A" },
+            { option_text: "Option B", is_correct: false, label: "B" }
+        ],
+        correct_answer_text: "",
+        explanation: "",
+        confidence: "high",
+        requires_review: false,
+        status: "approved"
+    });
+    composerState.activeIndex = composerState.questions.length - 1;
+    renderAll();
+    document.getElementById('activeQuestionStatement').focus();
+    triggerDebouncedAutoSave();
+}
+
+function addNewSection() {
+    const nextIdx = composerState.sections.length + 1;
+    const secLetter = String.fromCharCode(64 + nextIdx);
+    const newSecName = `Section ${secLetter}`;
+    composerState.sections.push({
+        section_id: `sec_${Date.now()}`,
+        name: newSecName,
+        instructions: `Instructions for ${newSecName}`,
+        sort_order: composerState.sections.length
+    });
+    renderSectionsAndQuestions();
+    triggerDebouncedAutoSave();
+}
+
+function renameSection(secId, newName) {
+    const sec = composerState.sections.find(s => s.section_id === secId);
+    if (sec) {
+        const oldName = sec.name;
+        sec.name = newName.trim() || oldName;
+        // Update questions mapped to oldName
+        composerState.questions.forEach(q => {
+            if (q.section === oldName) q.section = sec.name;
+        });
+        renderAll();
+        triggerDebouncedAutoSave();
+    }
+}
+
+function approveActiveQuestion() {
+    const q = getActiveQuestion();
+    if (q) {
+        q.requires_review = false;
+        q.status = 'approved';
+        renderSectionsAndQuestions();
+        renderPropertiesPanel(q);
+        updateStatsBar();
+        triggerDebouncedAutoSave();
+    }
+}
+
+function approveAllQuestions() {
+    composerState.questions.forEach(q => {
+        q.requires_review = false;
+        q.status = 'approved';
+    });
+    renderAll();
+    triggerDebouncedAutoSave();
+}
+
+function toggleOptionCorrect(optIdx, isChecked, isMulti) {
+    const q = getActiveQuestion();
+    if (!q || !q.options) return;
+    if (!isMulti) {
+        q.options.forEach((o, i) => o.is_correct = (i === optIdx));
+    } else {
+        q.options[optIdx].is_correct = isChecked;
+    }
+    renderOptionsBuilder(q);
+    triggerDebouncedAutoSave();
+}
+
+function updateOptionText(optIdx, val) {
+    const q = getActiveQuestion();
+    if (q && q.options && q.options[optIdx]) {
+        q.options[optIdx].option_text = val;
+        triggerDebouncedAutoSave();
+    }
+}
+
+function removeOption(optIdx) {
+    const q = getActiveQuestion();
+    if (q && q.options && q.options.length > 2) {
+        q.options.splice(optIdx, 1);
+        renderOptionsBuilder(q);
+        triggerDebouncedAutoSave();
+    }
+}
+
+function selectTrueFalse(isTrue) {
+    const q = getActiveQuestion();
+    if (q) {
+        q.correct_answer_text = isTrue ? 'True' : 'False';
+        q.options = [
+            { option_text: 'True', is_correct: isTrue, label: 'A' },
+            { option_text: 'False', is_correct: !isTrue, label: 'B' }
+        ];
+        renderOptionsBuilder(q);
+        triggerDebouncedAutoSave();
+    }
+}
+
+function toggleDistractionFree() {
+    composerState.distractionFree = !composerState.distractionFree;
+    const workspace = document.querySelector('.composer-workspace');
+    if (composerState.distractionFree) {
+        workspace.classList.add('distraction-free');
+        document.getElementById('btnToggleDistraction').style.background = '#e2e8f0';
+    } else {
+        workspace.classList.remove('distraction-free');
+        document.getElementById('btnToggleDistraction').style.background = '#ffffff';
+    }
+}
+
+// =============================================================================
+// RICH TEXT & FORMATTING HELPERS
+// =============================================================================
+
+function insertFormat(prefix, suffix) {
+    const ta = document.getElementById('activeQuestionStatement');
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const text = ta.value;
+    const selected = text.substring(start, end) || 'text';
+    ta.value = text.substring(0, start) + prefix + selected + suffix + text.substring(end);
+    ta.focus();
+    ta.setSelectionRange(start + prefix.length, start + prefix.length + selected.length);
+    ta.dispatchEvent(new Event('input'));
+}
+
+function insertTableTemplate() {
+    insertFormat('\n| Column 1 | Column 2 |\n|----------|----------|\n| Item A   | Item B   |\n', '');
+}
+
+function openMathModal() {
+    const o = document.getElementById('mathModalOverlay');
+    const m = document.getElementById('mathPaletteModal');
+    if (o) { o.style.display = 'block'; o.classList.add('open'); }
+    if (m) { m.style.display = 'block'; m.classList.add('open'); }
+}
+function closeMathModal() {
+    const o = document.getElementById('mathModalOverlay');
+    const m = document.getElementById('mathPaletteModal');
+    if (o) { o.style.display = 'none'; o.classList.remove('open'); }
+    if (m) { m.style.display = 'none'; m.classList.remove('open'); }
+}
+function insertMathFormula(formula) {
+    insertFormat(`$${formula}$`, '');
+    closeMathModal();
+}
+
+function handleImageUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('csrf_token', CSRF_TOKEN);
+
+    fetch('/admin/api/composer/upload-image', {
+        method: 'POST',
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success && data.image_url) {
+            insertFormat(`\n![Image](${data.image_url})\n`, '');
+        } else {
+            alert(data.error || 'Image upload failed');
+        }
+    })
+    .catch(err => alert('Upload error: ' + err));
+}
+
+// =============================================================================
+// BULK TEXT PARSER & IMPORT
+// =============================================================================
+
+let bulkParsedResults = [];
+
+function handleParseBulkText() {
+    const text = document.getElementById('bulkPasteTextarea').value.trim();
+    if (!text) {
+        alert('Please paste question text first.');
+        return;
+    }
+
+    fetch('/admin/api/composer/parse-text', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': CSRF_TOKEN
+        },
+        body: JSON.stringify({ text: text })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success && data.questions) {
+            bulkParsedResults = data.questions;
+            renderBulkParsePreview(data.questions);
+        } else {
+            alert(data.error || 'Parsing failed');
+        }
+    })
+    .catch(err => alert('Error parsing questions: ' + err));
+}
+
+function renderBulkParsePreview(questions) {
+    const container = document.getElementById('bulkParsePreviewContainer');
+    const list = document.getElementById('bulkParsedList');
+    document.getElementById('bulkParsedCount').textContent = questions.length;
+    list.innerHTML = '';
+
+    questions.forEach((q, idx) => {
+        const item = document.createElement('div');
+        item.style.padding = '8px 12px';
+        item.style.border = '1px solid #e2e8f0';
+        item.style.borderRadius = '6px';
+        item.style.background = '#fafbfc';
+        item.innerHTML = `
+            <strong>Q${idx + 1}.</strong> ${escapeHtml(q.statement)}
+            <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">
+                Type: ${q.question_type.toUpperCase()} | Marks: ${q.marks} | Options: ${(q.options || []).length}
+            </div>
+        `;
+        list.appendChild(item);
+    });
+
+    container.style.display = 'block';
+}
+
+function importBulkParsedQuestions() {
+    if (!bulkParsedResults || bulkParsedResults.length === 0) return;
+    
+    // Append bulk parsed questions to state
+    bulkParsedResults.forEach(q => {
+        q.question_number = composerState.questions.length + 1;
+        composerState.questions.push(q);
+    });
+
+    renderAll();
+    // Switch to editor tab
+    document.querySelector('.mode-tab-btn[data-tab="mode-editor"]').click();
+    triggerDebouncedAutoSave();
+}
+
+// =============================================================================
+// DOCUMENT UPLOAD & DROPZONE
+// =============================================================================
+
+function initDropzone() {
+    const dropzone = document.getElementById('paperDropzone');
+    const fileInput = document.getElementById('paperFileInput');
+
+    ['dragenter', 'dragover'].forEach(name => {
+        dropzone.addEventListener(name, (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+    });
+    ['dragleave', 'drop'].forEach(name => {
+        dropzone.addEventListener(name, (e) => { e.preventDefault(); dropzone.classList.remove('dragover'); });
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+        const file = e.dataTransfer.files[0];
+        if (file) handleDocumentUpload(file);
+    });
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) handleDocumentUpload(file);
+    });
+}
+
+function handleDocumentUpload(file) {
+    const pBox = document.getElementById('uploadProgressBox');
+    const pBar = document.getElementById('uploadProgressBar');
+    const nameEl = document.getElementById('uploadFileName');
+    const statusEl = document.getElementById('uploadStatusText');
+
+    pBox.style.display = 'block';
+    nameEl.textContent = file.name;
+    statusEl.textContent = 'Uploading & parsing document...';
+    pBar.style.width = '60%';
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('csrf_token', CSRF_TOKEN);
+    formData.append('mode', 'exam_paper');
+
+    fetch('/admin/api/composer/upload-document', {
+        method: 'POST',
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        pBar.style.width = '100%';
+        if (data.success && data.questions) {
+            statusEl.textContent = `Extracted ${data.count} questions successfully!`;
+            setTimeout(() => {
+                data.questions.forEach(q => {
+                    q.question_number = composerState.questions.length + 1;
+                    composerState.questions.push(q);
+                });
+                renderAll();
+                document.querySelector('.mode-tab-btn[data-tab="mode-editor"]').click();
+                triggerDebouncedAutoSave();
+            }, 600);
+        } else {
+            statusEl.textContent = data.error || 'Extraction failed.';
+            pBar.style.background = '#ef4444';
+        }
+    })
+    .catch(err => {
+        statusEl.textContent = 'Upload error: ' + err;
+        pBar.style.background = '#ef4444';
+    });
+}
+
+// =============================================================================
+// STUDY MATERIAL GROUNDED GENERATION
+// =============================================================================
+
+function handleGenerateStudyMaterial() {
+    const text = document.getElementById('studyMaterialText').value.trim();
+    if (!text) {
+        alert('Please paste study material or lecture notes first.');
+        return;
+    }
+
+    const numQ = parseInt(document.getElementById('genNumQuestions').value) || 5;
+    const diff = document.getElementById('genDifficulty').value;
+    const types = Array.from(document.querySelectorAll('.gen-qtype:checked')).map(cb => cb.value);
+
+    const btn = document.getElementById('btnGenerateGroundedQuestions');
+    btn.disabled = true;
+    btn.textContent = 'Generating Grounded Questions...';
+
+    fetch('/admin/api/composer/generate-from-material', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': CSRF_TOKEN
+        },
+        body: JSON.stringify({
+            text: text,
+            num_questions: numQ,
+            difficulty: diff,
+            question_types: types,
+            subject: document.getElementById('composerSubject').selectedOptions[0].text
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = '<span>Generate Grounded Questions</span>';
+        if (data.success && data.questions) {
+            data.questions.forEach(q => {
+                q.question_number = composerState.questions.length + 1;
+                composerState.questions.push(q);
+            });
+            renderAll();
+            document.querySelector('.mode-tab-btn[data-tab="mode-editor"]').click();
+            triggerDebouncedAutoSave();
+        } else {
+            alert(data.error || 'Generation failed');
+        }
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.innerHTML = '<span>Generate Grounded Questions</span>';
+        alert('Error: ' + err);
+    });
+}
+
+// =============================================================================
+// DRAFTS & AUTO-SAVE ENGINE
+// =============================================================================
+
+let autoSaveTimer = null;
+function triggerDebouncedAutoSave() {
+    clearTimeout(autoSaveTimer);
+    document.getElementById('draftSaveStatus').textContent = 'Saving draft...';
+    autoSaveTimer = setTimeout(saveComposerDraft, 1200);
+}
+
+function setupAutoSave() {
+    // Periodic fallback save every 30 seconds
+    setInterval(saveComposerDraft, 30000);
+}
+
+function saveComposerDraft() {
+    const payload = {
+        draft_id: composerState.draftId,
+        title: composerState.title,
+        subject_id: composerState.subjectId,
+        sections: composerState.sections,
+        questions: composerState.questions,
+        metadata: { timestamp: Date.now() }
+    };
+
+    fetch('/admin/api/composer/draft/save', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': CSRF_TOKEN
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            composerState.draftId = data.draft_id;
+            document.getElementById('draftSaveStatus').textContent = `Draft saved at ${data.timestamp}`;
+        }
+    })
+    .catch(() => {
+        document.getElementById('draftSaveStatus').textContent = 'Draft save pending';
+    });
+}
+
+// =============================================================================
+// EXPORT TO QUESTION BANK & CREATE EXAMINATION
+// =============================================================================
+
+function exportApprovedToQuestionBank() {
+    const approvedQuestions = composerState.questions.filter(q => q.status === 'approved' || !q.requires_review);
+    if (approvedQuestions.length === 0) {
+        alert('No approved questions to export. Please review and approve questions first.');
+        return;
+    }
+
+    if (!confirm(`Export ${approvedQuestions.length} approved question(s) to the Question Bank?`)) return;
+
+    fetch('/admin/api/composer/export-to-bank', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': CSRF_TOKEN
+        },
+        body: JSON.stringify({
+            questions: approvedQuestions,
+            subject_id: composerState.subjectId
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+        } else {
+            alert(data.error || 'Export failed');
+        }
+    })
+    .catch(err => alert('Error exporting to bank: ' + err));
+}
+
+function openCreateExamModal() {
+    const o = document.getElementById('examModalOverlay');
+    const m = document.getElementById('createExamModal');
+    if (o) { o.style.display = 'block'; o.classList.add('open'); }
+    if (m) { m.style.display = 'block'; m.classList.add('open'); }
+}
+function closeCreateExamModal() {
+    const o = document.getElementById('examModalOverlay');
+    const m = document.getElementById('createExamModal');
+    if (o) { o.style.display = 'none'; o.classList.remove('open'); }
+    if (m) { m.style.display = 'none'; m.classList.remove('open'); }
+}
+
+function openDraftsModal() {
+    const o = document.getElementById('draftsModalOverlay');
+    const m = document.getElementById('draftsModal');
+    if (o) { o.style.display = 'block'; o.classList.add('open'); }
+    if (m) { m.style.display = 'block'; m.classList.add('open'); }
+    loadDraftsList();
+}
+function closeDraftsModal() {
+    const o = document.getElementById('draftsModalOverlay');
+    const m = document.getElementById('draftsModal');
+    if (o) { o.style.display = 'none'; o.classList.remove('open'); }
+    if (m) { m.style.display = 'none'; m.classList.remove('open'); }
+}
+
+function loadDraftsList() {
+    const list = document.getElementById('draftsModalList');
+    if (!list) return;
+    list.innerHTML = '<p style="color:#64748b; font-size:0.88rem;">Loading drafts...</p>';
+    fetch('/admin/api/composer/drafts')
+    .then(r => r.json())
+    .then(data => {
+        if (!data.success || !data.drafts || data.drafts.length === 0) {
+            list.innerHTML = '<p style="color:#64748b; font-size:0.88rem;">No saved drafts found.</p>';
+            return;
+        }
+        list.innerHTML = '';
+        data.drafts.forEach(d => {
+            const item = document.createElement('div');
+            item.style.padding = '10px 14px';
+            item.style.border = '1px solid #e2e8f0';
+            item.style.borderRadius = '8px';
+            item.style.marginBottom = '8px';
+            item.style.display = 'flex';
+            item.style.justifyContent = 'space-between';
+            item.style.alignItems = 'center';
+            item.style.background = '#f8fafc';
+            item.innerHTML = `
+                <div>
+                    <strong style="color:#1e293b; font-size:0.92rem;">${escapeHtml(d.title)}</strong>
+                    <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">
+                        ${d.question_count || 0} questions &bull; ${escapeHtml(d.subject_name || 'General')} &bull; ${d.updated_at || ''}
+                    </div>
+                </div>
+                <div style="display:flex; gap:6px;">
+                    <button type="button" class="composer-btn composer-btn-primary" style="padding:4px 10px; font-size:0.78rem;" onclick="loadSpecificDraft(${d.draft_id})">Load</button>
+                    <button type="button" class="composer-btn composer-btn-secondary" style="padding:4px 8px; font-size:0.78rem; color:#dc2626;" onclick="deleteSpecificDraft(${d.draft_id})">Delete</button>
+                </div>
+            `;
+            list.appendChild(item);
+        });
+    })
+    .catch(err => {
+        list.innerHTML = `<p style="color:#dc2626; font-size:0.88rem;">Failed to load drafts: ${err}</p>`;
+    });
+}
+
+function loadSpecificDraft(draftId) {
+    fetch(`/admin/api/composer/draft/${draftId}`)
+    .then(r => r.json())
+    .then(data => {
+        if (data.success && data.draft) {
+            const d = data.draft;
+            composerState.draftId = d.draft_id;
+            composerState.title = d.title;
+            composerState.subjectId = d.subject_id || 1;
+            composerState.sections = (d.sections && d.sections.length > 0) ? d.sections : [{ section_id: 'sec_1', name: 'Section A', instructions: 'Objective Assessment', sort_order: 0 }];
+            composerState.questions = d.questions || [];
+            composerState.activeIndex = 0;
+
+            const titleEl = document.getElementById('composerExamTitle');
+            if (titleEl) titleEl.value = composerState.title;
+            const subjEl = document.getElementById('composerSubject');
+            if (subjEl && composerState.subjectId) subjEl.value = composerState.subjectId;
+
+            closeDraftsModal();
+            renderAll();
+            document.getElementById('draftSaveStatus').textContent = `Loaded draft: ${d.title}`;
+        }
+    })
+    .catch(err => alert('Failed to load draft: ' + err));
+}
+
+function deleteSpecificDraft(draftId) {
+    if (!confirm('Are you sure you want to delete this draft?')) return;
+    fetch(`/admin/api/composer/draft/${draftId}`, {
+        method: 'DELETE',
+        headers: { 'X-CSRFToken': CSRF_TOKEN }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            loadDraftsList();
+        } else {
+            alert(data.error || 'Failed to delete');
+        }
+    });
+}
+
+function confirmCreateExam() {
+    const payload = {
+        title: composerState.title,
+        subject_id: composerState.subjectId,
+        department: document.getElementById('modalDepartment').value,
+        semester: document.getElementById('modalSemester').value,
+        duration_minutes: parseInt(document.getElementById('modalDuration').value) || 60,
+        pass_marks: parseFloat(document.getElementById('modalPassMarks').value) || 0,
+        status: document.getElementById('modalStatus').value,
+        instructions: document.getElementById('modalInstructions').value,
+        sections: composerState.sections,
+        questions: composerState.questions
+    };
+
+    fetch('/admin/api/composer/create-exam', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': CSRF_TOKEN
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            window.location.href = data.redirect_url || '/admin/exams';
+        } else {
+            alert(data.error || 'Failed to create examination');
+        }
+    })
+    .catch(err => alert('Error creating exam: ' + err));
+}
+
+// =============================================================================
+// KEYBOARD SHORTCUTS
+// =============================================================================
+
+function handleGlobalShortcuts(e) {
+    if (e.ctrlKey && e.key === 'Enter') {
+        e.preventDefault();
+        addNewQuestion();
+    } else if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        saveComposerDraft();
+    } else if (e.altKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        toggleDistractionFree();
+    }
+}
+
+// Helper to escape HTML characters
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+</script>
+{% endblock %}

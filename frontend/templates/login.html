@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Candidate Login | ExamShield AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="auth-page">
+    <main class="auth-shell">
+        <section class="auth-card">
+            <div class="auth-brand">
+                <div class="brand-block">
+                    <div class="brand-mark" aria-hidden="true">E</div>
+                    <div>
+                        <div class="brand-title">ExamShield AI</div>
+                        <div class="brand-subtitle">Secure online examinations</div>
+                    </div>
+                </div>
+                <p class="eyebrow">Student access</p>
+                <h1>Welcome back</h1>
+                <p class="message">Enter the exam details provided by your institution to continue.</p>
+            </div>
+
+            {% if error %}
+            <div class="form-error" role="alert">{{ error }}</div>
+            {% endif %}
+
+            <form class="auth-form" method="post" action="{{ url_for('auth.login') }}">
+                {% if form_data.subject %}
+                <input type="hidden" name="subject" value="{{ form_data.subject }}">
+                {% endif %}
+                <label>
+                    <span>Student Full Name</span>
+                    <input type="text" name="name" value="{{ form_data.name }}" placeholder="e.g. Aarav Sharma" required autofocus>
+                </label>
+
+                <label>
+                    <span>University Seat Number (USN)</span>
+                    <input type="text" name="usn" value="{{ form_data.usn }}" placeholder="e.g. 1CS23AI099" style="text-transform: uppercase;" required>
+                </label>
+
+                <label>
+                    <span>Examination Code</span>
+                    <input type="text" name="exam_code" value="{{ form_data.exam_code }}" placeholder="e.g. COA3-X7K92P" style="text-transform: uppercase; font-family: monospace; letter-spacing: 1px;" required>
+                </label>
+
+                <button type="submit" class="primary-button" style="margin-top: 6px;">Start Examination</button>
+            </form>
+            <p class="message">Already registered? <a href="{{ url_for('auth.account_login') }}">Log in with email</a></p>
+            <p class="message">New to ExamShield AI? <a href="{{ url_for('auth.register') }}">Create a student account</a></p>
+            <p class="message">Teacher or Administrator? <a href="{{ url_for('admin.login') }}">Teacher &amp; Admin portal</a></p>
+        </section>
+    </main>
+</body>
+</html>

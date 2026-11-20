@@ -1,0 +1,59 @@
+{% extends "admin/layout.html" %}
+{% set active_tab = "users" %}
+{% block heading %}Manage administrative accounts{% endblock %}
+{% block admin_content %}
+<div class="content-panel">
+    {% if error %}
+    <div class="error-box" role="alert">{{ error }}</div>
+    {% elif created %}
+    <p role="status">The account was created successfully.</p>
+    {% endif %}
+    <h2>Create account</h2>
+    <p>Teacher accounts can only see exams specifically assigned here. Passwords must contain at least 12 characters.</p>
+    <form method="post" action="{{ url_for('admin.users') }}">
+        <input type="hidden" name="csrf_token" value="{{ admin_csrf_token() }}">
+        <label>Name<input name="name" required autocomplete="name"></label>
+        <label>Email<input type="email" name="email" required autocomplete="email"></label>
+        <label>Role
+            <select name="role" required>
+                <option value="Teacher">Teacher</option>
+                <option value="Super Admin">Super Admin</option>
+            </select>
+        </label>
+        <label>Temporary password<input type="password" name="password" minlength="12" required autocomplete="new-password"></label>
+        <fieldset>
+            <legend>Examination access for teachers</legend>
+            {% for exam in exams %}
+            <label>
+                <input type="checkbox" name="exam_ids" value="{{ exam.exam_id }}" style="width:auto">
+                {{ exam.name }}
+            </label>
+            {% else %}
+            <p>No examinations are available to assign.</p>
+            {% endfor %}
+        </fieldset>
+        <button type="submit" class="primary-button">Create account</button>
+    </form>
+</div>
+<div class="content-panel" style="margin-top: 1.5rem">
+    <h2>Existing accounts</h2>
+    <div class="table-grid">
+        <table>
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Assigned exams</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.name }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.role }}</td>
+                    <td>{{ user.assigned_exams }}</td>
+                    <td>{{ "Active" if user.active else "Disabled" }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5">No administrative accounts found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

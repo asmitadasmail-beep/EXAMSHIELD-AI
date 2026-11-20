@@ -1,0 +1,7 @@
+timestamp,event_type,confidence,severity,details
+2026-11-01 13:58:31,PHONE_DETECTED,0.5670817494392395,HIGH,Cell phone detected in the frame with confidence 0.57.
+2026-11-01 13:58:42,PHONE_DETECTED,0.5639457702636719,HIGH,Cell phone detected in the frame with confidence 0.56.
+2026-11-01 13:58:43,PHONE_DETECTED,0.799728274345398,HIGH,Cell phone detected in the frame with confidence 0.80.
+2026-11-01 13:58:45,PHONE_DETECTED,0.8371357321739197,HIGH,Cell phone detected in the frame with confidence 0.84.
+2026-11-01 13:58:51,PHONE_DETECTED,0.6894471049308777,HIGH,Cell phone detected in the frame with confidence 0.69.
+2026-11-01 13:59:04,LOOKING_AWAY,0.95,MEDIUM,"Head deviation (LOOKING_DOWN): yaw=-1.1°, pitch=12.9° for 3 seconds."

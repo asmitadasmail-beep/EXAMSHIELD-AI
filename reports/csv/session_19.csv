@@ -1,0 +1,4 @@
+timestamp,event_type,confidence,severity,details
+2026-11-03 05:40:42,MULTIPLE_PERSON,0.8784751296043396,HIGH,Detected 4 persons in the camera frame.
+2026-11-03 05:40:50,MULTIPLE_PERSON,0.8425279855728149,HIGH,Detected 3 persons in the camera frame.
+2026-11-03 05:41:01,MULTIPLE_PERSON,0.8634741306304932,HIGH,Detected 3 persons in the camera frame.

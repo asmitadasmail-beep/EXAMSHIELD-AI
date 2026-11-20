@@ -1,0 +1,470 @@
+{% extends "admin/layout.html" %}
+{% set active_tab = "dashboard" %}
+{% block heading %}Admin dashboard{% endblock %}
+
+{% block admin_content %}
+<div class="dashboard-content">
+    <!-- Welcome Header Banner -->
+    <div class="dashboard-header-banner">
+        <div class="header-meta">
+            <h2>Academic Examination Overview</h2>
+            <p>Real-time analytics, assessment activity, candidate performance trends, and proctoring logs.</p>
+        </div>
+        <div class="header-actions">
+            <a href="{{ url_for('admin.exam_create') }}" class="btn-primary">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Create Examination
+            </a>
+            <a href="{{ url_for('admin.reports') }}" class="btn-secondary">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                View Reports
+            </a>
+        </div>
+    </div>
+
+    <!-- Dashboard Statistics Grid -->
+    <div class="stats-grid">
+        <!-- Total Students -->
+        <article class="stat-card">
+            <div class="stat-top-row">
+                <span class="stat-label">Total Students</span>
+                <div class="stat-icon-shell stat-icon-blue">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+            </div>
+            <div class="stat-value">{{ stats.students }}</div>
+            <span class="stat-hint">Registered candidates</span>
+        </article>
+
+        {# Faculty Accounts (Super Admin Only) #}
+        {% if admin_user.role == 'Super Admin' %}
+        <article class="stat-card">
+            <div class="stat-top-row">
+                <span class="stat-label">Teachers</span>
+                <div class="stat-icon-shell stat-icon-purple">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+            </div>
+            <div class="stat-value">{{ stats.teachers }}</div>
+            <span class="stat-hint">Active faculty accounts</span>
+        </article>
+        {% endif %}
+
+        <!-- Total Examinations -->
+        <article class="stat-card">
+            <div class="stat-top-row">
+                <span class="stat-label">Total Examinations</span>
+                <div class="stat-icon-shell stat-icon-indigo">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                </div>
+            </div>
+            <div class="stat-value">{{ stats.total_examinations }}</div>
+            <span class="stat-hint">{{ stats.questions_in_bank }} questions in bank</span>
+        </article>
+
+        <!-- Upcoming Examinations -->
+        <article class="stat-card">
+            <div class="stat-top-row">
+                <span class="stat-label">Upcoming</span>
+                <div class="stat-icon-shell stat-icon-cyan">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+            </div>
+            <div class="stat-value">{{ stats.upcoming_examinations }}</div>
+            <span class="stat-hint">Ready for attempts</span>
+        </article>
+
+        <!-- Active Examinations -->
+        <article class="stat-card">
+            <div class="stat-top-row">
+                <span class="stat-label">Active Examinations</span>
+                <div class="stat-icon-shell stat-icon-amber">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </div>
+            </div>
+            <div class="stat-value">{{ stats.active_examinations }}</div>
+            <span class="stat-hint">Sessions in progress</span>
+        </article>
+
+        <!-- Completed Examinations -->
+        <article class="stat-card">
+            <div class="stat-top-row">
+                <span class="stat-label">Completed</span>
+                <div class="stat-icon-shell stat-icon-green">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                </div>
+            </div>
+            <div class="stat-value">{{ stats.completed_examinations }}</div>
+            <span class="stat-hint">Submitted evaluations</span>
+        </article>
+
+        <!-- Average Student Performance -->
+        <article class="stat-card">
+            <div class="stat-top-row">
+                <span class="stat-label">Average Performance</span>
+                <div class="stat-icon-shell stat-icon-rose">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                </div>
+            </div>
+            <div class="stat-value">{{ stats.average_student_performance }}%</div>
+            <span class="stat-hint">Across all submissions</span>
+        </article>
+    </div>
+
+    <!-- ROW 1: Visual Graphs (Examination Activity & Student Performance Trend) -->
+    <div class="dashboard-grid-2col">
+        <!-- Section 1: Examination Activity Graph -->
+        <section class="dashboard-card" aria-labelledby="activityGraphTitle">
+            <div class="card-header-bar">
+                <div class="card-title-group">
+                    <h3 id="activityGraphTitle">Examination Activity</h3>
+                    <p>Candidate participation and submission status by subject</p>
+                </div>
+                <span class="status-pill pill-primary">
+                    {{ (stats.completed_examinations + stats.active_examinations) }} Total Attempts
+                </span>
+            </div>
+            <div class="card-body-panel">
+                {% if subject_activity and subject_activity|length > 0 %}
+                <div class="activity-bars-list">
+                    {% for item in subject_activity %}
+                    {% set max_total = (stats.completed_examinations + stats.active_examinations) or 1 %}
+                    {% set sub_pct = (item.submitted_count / max_total * 100)|round(1) %}
+                    {% set act_pct = (item.in_progress_count / max_total * 100)|round(1) %}
+                    <div class="activity-bar-item">
+                        <div class="bar-meta">
+                            <span class="bar-label">{{ item.subject_name }}</span>
+                            <span class="bar-stats">
+                                <strong>{{ item.total_attempts }}</strong> attempts
+                                ({{ item.submitted_count }} completed, {{ item.in_progress_count }} active)
+                            </span>
+                        </div>
+                        <div class="bar-track" title="{{ item.subject_name }}: {{ item.submitted_count }} submitted, {{ item.in_progress_count }} active">
+                            <div class="bar-fill-submitted" style="width: {{ sub_pct }}%;"></div>
+                            <div class="bar-fill-active" style="width: {{ act_pct }}%;"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="chart-legend">
+                    <div class="legend-item"><span class="legend-dot legend-dot-submitted"></span> Submitted / Completed</div>
+                    <div class="legend-item"><span class="legend-dot legend-dot-active"></span> In Progress</div>
+                    <div class="legend-item"><span class="legend-dot legend-dot-total"></span> Subject Capacity</div>
+                </div>
+                {% else %}
+                <div class="empty-state-shell">
+                    <div class="empty-icon">📊</div>
+                    <p>No examination activity recorded yet. Subject activity will appear once candidates take tests.</p>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <!-- Section 2: Student Performance Trend Graph -->
+        <section class="dashboard-card" aria-labelledby="performanceTrendTitle">
+            <div class="card-header-bar">
+                <div class="card-title-group">
+                    <h3 id="performanceTrendTitle">Student Performance Trend</h3>
+                    <p>Grade tier distribution and evaluation progression</p>
+                </div>
+                <span class="status-pill pill-purple">
+                    Avg: {{ stats.average_student_performance }}%
+                </span>
+            </div>
+            <div class="card-body-panel">
+                <!-- Performance Grade Bands -->
+                <div class="performance-overview-grid">
+                    <div class="band-pill band-distinction">
+                        <span class="band-count">{{ performance_bands.distinction }}</span>
+                        <span class="band-title">Distinction (&ge;85%)</span>
+                    </div>
+                    <div class="band-pill band-proficient">
+                        <span class="band-count">{{ performance_bands.proficient }}</span>
+                        <span class="band-title">Proficient (70-84%)</span>
+                    </div>
+                    <div class="band-pill band-average">
+                        <span class="band-count">{{ performance_bands.average }}</span>
+                        <span class="band-title">Average (50-69%)</span>
+                    </div>
+                    <div class="band-pill band-needs-improvement">
+                        <span class="band-count">{{ performance_bands.needs_improvement }}</span>
+                        <span class="band-title">Needs Imp. (&lt;50%)</span>
+                    </div>
+                </div>
+
+                <!-- Trendline Chart -->
+                <div class="trend-chart-shell">
+                    {% if performance_trend and performance_trend|length > 0 %}
+                    <svg class="svg-trend-chart" viewBox="0 0 500 130" preserveAspectRatio="none" aria-label="Performance trend chart">
+                        <!-- Horizontal Grid Lines -->
+                        <line x1="40" y1="15" x2="490" y2="15" stroke="#e2e8f0" stroke-dasharray="3,3" stroke-width="1"/>
+                        <text x="5" y="19" font-size="10" fill="#94a3b8">100%</text>
+                        
+                        <line x1="40" y1="65" x2="490" y2="65" stroke="#e2e8f0" stroke-dasharray="3,3" stroke-width="1"/>
+                        <text x="12" y="69" font-size="10" fill="#94a3b8">50%</text>
+
+                        <line x1="40" y1="115" x2="490" y2="115" stroke="#cbd5e1" stroke-width="1"/>
+                        <text x="18" y="119" font-size="10" fill="#94a3b8">0%</text>
+
+                        <!-- SVG Points Calculation -->
+                        {% set count = performance_trend|length %}
+                        {% set x_step = (440 / (count - 1)) if count > 1 else 220 %}
+                        
+                        <!-- Area Fill -->
+                        <polygon points="40,115
+                            {% for r in performance_trend %}
+                                {% set pt_x = 40 + (loop.index0 * x_step) %}
+                                {% set pt_y = 115 - (r.percentage * 1.0) %}
+                                {{ pt_x }},{{ pt_y }}
+                            {% endfor %}
+                            {{ 40 + ((count - 1) * x_step) }},115"
+                            fill="rgba(37, 99, 235, 0.08)" />
+
+                        <!-- Polyline Line -->
+                        <polyline points="
+                            {% for r in performance_trend %}
+                                {% set pt_x = 40 + (loop.index0 * x_step) %}
+                                {% set pt_y = 115 - (r.percentage * 1.0) %}
+                                {{ pt_x }},{{ pt_y }}
+                            {% endfor %}"
+                            fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+
+                        <!-- Data Point Markers -->
+                        {% for r in performance_trend %}
+                            {% set pt_x = 40 + (loop.index0 * x_step) %}
+                            {% set pt_y = 115 - (r.percentage * 1.0) %}
+                            <circle cx="{{ pt_x }}" cy="{{ pt_y }}" r="4" fill="#ffffff" stroke="#2563eb" stroke-width="2">
+                                <title>{{ r.student_name }}: {{ r.percentage|round(1) }}% in {{ r.exam_name }}</title>
+                            </circle>
+                            <text x="{{ pt_x }}" y="{{ pt_y - 7 }}" font-size="9" font-weight="700" fill="#1e40af" text-anchor="middle">
+                                {{ r.percentage|round(0)|int }}%
+                            </text>
+                        {% endfor %}
+                    </svg>
+                    <div class="chart-legend" style="margin-top: 6px;">
+                        <span class="text-muted" style="font-size: 0.76rem;">Timeline: Chronological candidate evaluation results</span>
+                    </div>
+                    {% else %}
+                    <div class="empty-state-shell" style="padding: 1.5rem 1rem;">
+                        <div class="empty-icon">📈</div>
+                        <p>No student submission scores evaluated yet. Trends will generate as students submit papers.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- ROW 2: Upcoming Examinations & Recent Examination Activity -->
+    <div class="dashboard-grid-2col">
+        <!-- Section 3: Upcoming Examinations List -->
+        <section class="dashboard-card" aria-labelledby="upcomingExamsTitle">
+            <div class="card-header-bar">
+                <div class="card-title-group">
+                    <h3 id="upcomingExamsTitle">Upcoming Examinations</h3>
+                    <p>Available assessment papers ready for student participation</p>
+                </div>
+                <a href="{{ url_for('admin.exams') }}" class="card-action-link">View all exams &rarr;</a>
+            </div>
+            <div class="card-body-panel" style="padding: 0;">
+                {% if upcoming_exams and upcoming_exams|length > 0 %}
+                <div class="table-scroll-shell">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Examination</th>
+                                <th>Subject</th>
+                                <th>Duration</th>
+                                <th>Marks</th>
+                                <th>Difficulty</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for exam in upcoming_exams %}
+                            <tr>
+                                <td>
+                                    <strong>{{ exam.name }}</strong>
+                                    <small class="text-muted" style="display:block;">{{ exam.bank_name }} &middot; {{ exam.question_count }} questions</small>
+                                </td>
+                                <td><span class="status-pill pill-neutral">{{ exam.subject_name }}</span></td>
+                                <td>{{ exam.duration_minutes }} min</td>
+                                <td>{{ exam.max_marks }} pts</td>
+                                <td>
+                                    <span class="status-pill {% if exam.difficulty == 'Easy' %}pill-success{% elif exam.difficulty == 'Medium' %}pill-warning{% else %}pill-purple{% endif %}">
+                                        {{ exam.difficulty }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state-shell">
+                    <div class="empty-icon">📝</div>
+                    <p>All examinations currently have active or completed candidate attempts. Use <strong>Create Question Paper</strong> to add new assessments.</p>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <!-- Section 4: Recent Examination Activity -->
+        <section class="dashboard-card" aria-labelledby="recentActivityTitle">
+            <div class="card-header-bar">
+                <div class="card-title-group">
+                    <h3 id="recentActivityTitle">Recent Examination Activity</h3>
+                    <p>Real-time monitor of student testing attempts</p>
+                </div>
+                <a href="{{ url_for('admin.reports') }}" class="card-action-link">Full audit &rarr;</a>
+            </div>
+            <div class="card-body-panel" style="padding: 0;">
+                {% if recent_activity and recent_activity|length > 0 %}
+                <div class="table-scroll-shell">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Candidate</th>
+                                <th>Examination</th>
+                                <th>Started</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in recent_activity %}
+                            <tr>
+                                <td>
+                                    <strong>{{ item.student_name }}</strong>
+                                    <small class="text-muted" style="display:block;">USN: {{ item.usn }}</small>
+                                </td>
+                                <td>
+                                    {{ item.exam_name }}
+                                    <small class="text-muted" style="display:block;">{{ item.subject_name }}</small>
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ item.started_at[:16] if item.started_at else '-' }}</small>
+                                </td>
+                                <td>
+                                    {% if item.status == 'submitted' %}
+                                    <span class="status-pill pill-success">Submitted</span>
+                                    {% else %}
+                                    <span class="status-pill pill-warning">In Progress</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state-shell">
+                    <div class="empty-icon">⏳</div>
+                    <p>No recent student attempt activity. Candidate logins and exam starts will show here in real time.</p>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+
+    <!-- ROW 3: Recently Submitted Examinations & Recent Student Performance Highlights -->
+    <div class="dashboard-grid-2col">
+        <!-- Section 5: Recently Submitted Examinations -->
+        <section class="dashboard-card" aria-labelledby="recentSubmissionsTitle">
+            <div class="card-header-bar">
+                <div class="card-title-group">
+                    <h3 id="recentSubmissionsTitle">Recently Submitted Examinations</h3>
+                    <p>Completed candidate evaluations with marks and accuracy</p>
+                </div>
+                <a href="{{ url_for('admin.reports') }}" class="card-action-link">View all submissions &rarr;</a>
+            </div>
+            <div class="card-body-panel" style="padding: 0;">
+                {% if recent_submissions and recent_submissions|length > 0 %}
+                <div class="table-scroll-shell">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Candidate</th>
+                                <th>Examination</th>
+                                <th>Score</th>
+                                <th>Accuracy</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sub in recent_submissions %}
+                            <tr>
+                                <td>
+                                    <strong>{{ sub.student_name }}</strong>
+                                    <small class="text-muted" style="display:block;">USN: {{ sub.usn }}</small>
+                                </td>
+                                <td>{{ sub.exam_name }}</td>
+                                <td>
+                                    <strong>{{ sub.marks_obtained }} / {{ sub.max_marks }}</strong>
+                                    <span class="status-pill {% if sub.percentage >= 75 %}pill-success{% elif sub.percentage >= 50 %}pill-primary{% else %}pill-warning{% endif %}">
+                                        {{ sub.percentage|round(1) }}%
+                                    </span>
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ sub.correct_answers }}✓ · {{ sub.incorrect_answers }}✗ · {{ sub.unanswered }}—
+                                    </small>
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ (sub.time_taken_seconds // 60) }}m {{ (sub.time_taken_seconds % 60) }}s
+                                    </small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state-shell">
+                    <div class="empty-icon">📬</div>
+                    <p>No examinations submitted yet. Submissions and scores will appear as candidates submit their papers.</p>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <!-- Section 6: Recent Student Performance Highlights -->
+        <section class="dashboard-card" aria-labelledby="performanceHighlightsTitle">
+            <div class="card-header-bar">
+                <div class="card-title-group">
+                    <h3 id="performanceHighlightsTitle">Performance Highlights</h3>
+                    <p>Top achieving candidates across evaluated examinations</p>
+                </div>
+                <span class="status-pill pill-purple">Top Scorers</span>
+            </div>
+            <div class="card-body-panel">
+                {% if performance_highlights and performance_highlights|length > 0 %}
+                <div class="highlights-list">
+                    {% for high in performance_highlights %}
+                    <div class="highlight-item">
+                        <div class="rank-medal {% if loop.index == 1 %}rank-1{% elif loop.index == 2 %}rank-2{% elif loop.index == 3 %}rank-3{% else %}rank-default{% endif %}">
+                            {{ loop.index }}
+                        </div>
+                        <div class="highlight-meta">
+                            <div class="highlight-name">{{ high.student_name }}</div>
+                            <div class="highlight-exam">{{ high.exam_name }} &middot; USN: {{ high.usn }}</div>
+                        </div>
+                        <div class="highlight-score">
+                            <strong>{{ high.marks_obtained }} / {{ high.max_marks }}</strong>
+                            <span class="status-pill {% if high.percentage >= 85 %}pill-purple{% elif high.percentage >= 70 %}pill-success{% else %}pill-primary{% endif %}">
+                                {{ high.percentage|round(1) }}%
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state-shell">
+                    <div class="empty-icon">🏆</div>
+                    <p>Performance highlights and honor standings will populate once candidate evaluations are completed.</p>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,285 @@
+{% extends "admin/layout.html" %}
+{% set active_tab = "exam_create" %}
+
+{% block heading %}Create Question Paper{% endblock %}
+
+{% block header_actions %}
+<div class="header-actions">
+    <a href="{{ url_for('admin.question_composer') }}" class="btn-secondary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px; border-color: #93c5fd; color: #1d4ed8; background: #eff6ff;">
+        <span>✨</span> Smart Composer
+    </a>
+    <button type="button" class="btn-secondary" data-action="open-preview">Preview Paper</button>
+    <button type="button" class="btn-secondary" data-action="save-draft">Save as Draft</button>
+    <button type="button" class="btn-primary" data-action="publish-exam">Publish Examination</button>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+<div class="builder-shell" style="max-width: 1200px; margin: 0 auto;">
+    <input type="hidden" name="csrf_token" value="{{ admin_csrf_token() }}">
+
+    <!-- Builder Status Alert -->
+    <div id="builder-alert" class="alert-banner" style="display: none; margin-bottom: 1.5rem; padding: 0.85rem 1.25rem; border-radius: var(--radius-md); font-weight: 500;"></div>
+
+    {% if error %}
+    <div class="alert-banner alert-danger" style="margin-bottom: 1.5rem; padding: 0.85rem 1.25rem; border-radius: var(--radius-md); font-weight: 500; background: #fee2e2; color: #991b1b; border: 1px solid #f87171;">
+        {{ error }}
+    </div>
+    {% endif %}
+
+    <!-- PART 1: EXAMINATION DETAILS -->
+    <div class="content-panel" style="margin-bottom: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.25rem;">
+            <div>
+                <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--text-primary);">1. Examination Configuration &amp; Metadata</h3>
+                <p style="margin: 4px 0 0; font-size: 0.85rem; color: var(--text-muted);">Configure academic metadata, evaluation policies, scheduling, and student delivery instructions.</p>
+            </div>
+            <span class="badge badge-neutral" style="text-transform: uppercase; font-weight: 700;">Academic Settings</span>
+        </div>
+
+        <form id="exam-details-form" onsubmit="return false;">
+            <div class="admin-form-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem;">
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="exam-title" style="font-weight: 600;">Examination Title <span style="color: var(--danger);">*</span></label>
+                    <input type="text" id="exam-title" name="title" class="form-control" placeholder="e.g. End-Semester Assessment: Advanced Algorithms &amp; Complexity" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="exam-subject" style="font-weight: 600;">Subject <span style="color: var(--danger);">*</span></label>
+                    <select id="exam-subject" name="subject" class="form-control">
+                        {% for subj in subjects %}
+                        <option value="{{ subj.name }}">{{ subj.name }}</option>
+                        {% endfor %}
+                        <option value="__custom__">+ Enter Custom Subject...</option>
+                    </select>
+                    <input type="text" id="exam-subject-custom" class="form-control" placeholder="Enter custom subject name" style="display: none; margin-top: 8px;">
+                </div>
+
+                <div class="form-group">
+                    <label for="exam-department" style="font-weight: 600;">Department / Faculty</label>
+                    <input type="text" id="exam-department" name="department" class="form-control" placeholder="e.g. Computer Science &amp; Engineering" value="Computer Science &amp; Engineering">
+                </div>
+
+                <div class="form-group">
+                    <label for="exam-semester" style="font-weight: 600;">Semester</label>
+                    <select id="exam-semester" name="semester" class="form-control">
+                        <option value="Semester 1">Semester 1</option>
+                        <option value="Semester 2">Semester 2</option>
+                        <option value="Semester 3">Semester 3</option>
+                        <option value="Semester 4">Semester 4</option>
+                        <option value="Semester 5" selected>Semester 5</option>
+                        <option value="Semester 6">Semester 6</option>
+                        <option value="Semester 7">Semester 7</option>
+                        <option value="Semester 8">Semester 8</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="exam-academic-year" style="font-weight: 600;">Academic Year</label>
+                    <input type="text" id="exam-academic-year" name="academic_year" class="form-control" value="2025-2026">
+                </div>
+
+                <div class="form-group">
+                    <label for="exam-duration" style="font-weight: 600;">Duration (Minutes) <span style="color: var(--danger);">*</span></label>
+                    <input type="number" id="exam-duration" name="duration" class="form-control" value="1" min="1" max="360" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="exam-total-marks" style="font-weight: 600;">Total Maximum Marks</label>
+                    <input type="number" id="exam-total-marks" name="marks" class="form-control" value="0" readonly title="Automatically calculated from individual questions" style="background: var(--bg-card-subtle); cursor: not-allowed; font-weight: bold; color: var(--primary);">
+                    <small style="color: var(--text-muted); font-size: 0.75rem;">Calculated automatically from individual question marks.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="exam-pass-marks" style="font-weight: 600;">Passing Marks</label>
+                    <input type="number" id="exam-pass-marks" name="pass_marks" class="form-control" value="1" min="0" step="0.5">
+                </div>
+
+                <div class="form-group">
+                    <label for="exam-negative-marking" style="font-weight: 600;">Negative Marking (Deduction per incorrect answer)</label>
+                    <input type="number" id="exam-negative-marking" name="negative_marking" class="form-control" value="0" min="0" step="0.25">
+                </div>
+
+                <div class="form-group">
+                    <label for="exam-start-time" style="font-weight: 600;">Start Date &amp; Time (For Scheduled Exams)</label>
+                    <input type="datetime-local" id="exam-start-time" name="start_time" class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <label for="exam-end-time" style="font-weight: 600;">End Date &amp; Time</label>
+                    <input type="datetime-local" id="exam-end-time" name="end_time" class="form-control">
+                </div>
+
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="exam-description" style="font-weight: 600;">Examination Description / Syllabus Scope</label>
+                    <textarea id="exam-description" name="description" class="form-control" rows="2" placeholder="Brief outline of syllabus modules and key assessment outcomes covered in this paper..."></textarea>
+                </div>
+
+                <!-- Delivery Options Toggles -->
+                <div class="form-group" style="grid-column: 1 / -1; background: var(--bg-card-subtle); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                    <strong style="display: block; font-size: 0.88rem; margin-bottom: 8px; color: var(--text-primary);">Assessment Delivery &amp; Security Preferences</strong>
+                    <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+                        <label class="checkbox-toggle-label" style="display: flex; align-items: center; gap: 8px; font-size: 0.88rem; cursor: pointer;">
+                            <input type="checkbox" id="exam-rand-questions" name="randomize_questions" checked>
+                            <span>Randomise question sequence</span>
+                        </label>
+                        <label class="checkbox-toggle-label" style="display: flex; align-items: center; gap: 8px; font-size: 0.88rem; cursor: pointer;">
+                            <input type="checkbox" id="exam-rand-options" name="randomize_options" checked>
+                            <span>Randomise answer options</span>
+                        </label>
+                        <label class="checkbox-toggle-label" style="display: flex; align-items: center; gap: 8px; font-size: 0.88rem; cursor: pointer;">
+                            <input type="checkbox" id="exam-multi-attempts" name="allow_multiple_attempts">
+                            <span>Allow multiple attempts</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="exam-instructions" style="font-weight: 600;">Examination Instructions</label>
+                    <textarea id="exam-instructions" name="instructions" class="form-control" rows="4">1. Ensure you have a stable network connection before starting.
+2. Read each question carefully before submitting your answer.
+3. The examination session is continuously monitored via AI-assisted proctoring.
+4. Switching tabs, navigating away, or unauthorized aids will be logged as security incidents.</textarea>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- PART 3: STICKY QUESTION-PAPER LIVE SUMMARY BAR -->
+    <div class="paper-summary-bar">
+        <div class="summary-stats-group">
+            <div class="summary-stat-box">
+                <small>Total Questions</small>
+                <strong id="stat-q-count">0</strong>
+            </div>
+            <div class="summary-stat-box highlight">
+                <small>Total Marks</small>
+                <strong id="stat-total-marks">0</strong>
+            </div>
+            <div class="summary-stat-box">
+                <small>Duration</small>
+                <strong id="stat-duration">45 min</strong>
+            </div>
+            <div class="summary-stat-box">
+                <small>Avg Marks/Q</small>
+                <strong id="stat-avg-marks">0.0</strong>
+            </div>
+        </div>
+
+        <div class="summary-actions-group">
+            <!-- Add Question dropdown or quick type selector -->
+            <div style="display: inline-flex; gap: 4px; flex-wrap: wrap;">
+                <button type="button" class="btn-primary" data-add-type="mcq" title="Add Multiple Choice Question">+ MCQ</button>
+                <button type="button" class="btn-secondary" data-add-type="multiple_select" title="Add Multiple Select Question">+ Multi-Select</button>
+                <button type="button" class="btn-secondary" data-add-type="true_false" title="Add True / False Question">+ True/False</button>
+                <button type="button" class="btn-secondary" data-add-type="fill_blank" title="Add Fill in Blanks Question">+ Blanks</button>
+                <button type="button" class="btn-secondary" data-add-type="short_answer" title="Add Short Answer Question">+ Short Answer</button>
+                <button type="button" class="btn-secondary" data-add-type="long_answer" title="Add Long Answer Question">+ Long Answer</button>
+                <button type="button" class="btn-secondary" data-add-type="numerical" title="Add Numerical Question">+ Numerical</button>
+            </div>
+
+            <button type="button" class="btn-secondary" data-action="open-bank" style="margin-left: 8px;">
+                📥 Import from Bank
+            </button>
+            <button type="button" class="btn-secondary" data-action="open-preview">
+                👁️ Preview
+            </button>
+        </div>
+    </div>
+
+    <!-- PART 2 & 3: INTERACTIVE QUESTION BUILDER -->
+    <div style="margin-bottom: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <div>
+                <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--text-primary);">2. Question Paper Items</h3>
+                <p style="margin: 2px 0 0; font-size: 0.85rem; color: var(--text-muted);">Add, edit, duplicate, and drag-and-drop questions to reorder the examination sequence.</p>
+            </div>
+            <span style="font-size: 0.82rem; color: var(--text-muted); font-weight: 500;">Drag &#x2630; handles or use &uarr;&darr; buttons to reorder</span>
+        </div>
+
+        <div id="questions-empty-state" style="display: none; padding: 3rem 1.5rem; text-align: center; background: #ffffff; border: 2px dashed var(--border-color); border-radius: var(--radius-lg);">
+            <div style="font-size: 2.5rem; margin-bottom: 8px;">📝</div>
+            <h4 style="margin: 0 0 6px; font-size: 1.1rem; color: var(--text-primary);">No questions added to this examination yet</h4>
+            <p style="margin: 0 0 1.25rem; font-size: 0.88rem; color: var(--text-muted);">Select a question type above or import vetted items directly from the faculty Question Bank.</p>
+            <button type="button" class="btn-primary" data-add-type="mcq">+ Add First Question</button>
+        </div>
+
+        <div id="questions-container" class="questions-list">
+            <!-- Dynamic question cards injected by admin_exam_builder.js -->
+        </div>
+    </div>
+
+    <!-- PART 5: FLOATING BOTTOM ACTION BAR -->
+    <div class="bottom-publish-bar">
+        <div class="publish-status-note">
+            Draft examinations are saved privately in your faculty workspace. Published examinations become immediately accessible to enrolled candidates.
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <button type="button" class="btn-secondary" data-action="save-draft">
+                💾 Save as Draft
+            </button>
+            <button type="button" class="btn-secondary" data-action="open-preview">
+                👁️ Preview Paper
+            </button>
+            <button type="button" class="btn-secondary" data-action="schedule-exam">
+                📅 Schedule Examination
+            </button>
+            <button type="button" class="btn-primary" data-action="publish-exam">
+                🚀 Publish Examination
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- PART 4: QUESTION PAPER PREVIEW MODAL -->
+<div id="preview-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3>Institutional Question Paper Preview</h3>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <button type="button" id="btn-toggle-modal-answer-key" class="btn-secondary" style="padding: 0.4rem 0.85rem; font-size: 0.82rem;">
+                    Toggle Answer Key &amp; Rubric
+                </button>
+                <button type="button" id="btn-print-modal-paper" class="btn-primary" style="padding: 0.4rem 0.85rem; font-size: 0.82rem;">
+                    Print Paper
+                </button>
+                <button type="button" class="btn-icon-subtle" data-action="close-preview" style="font-size: 1.5rem; line-height: 1;" title="Close Preview">&times;</button>
+            </div>
+        </div>
+        <div class="modal-body" id="preview-modal-content">
+            <!-- Rendered institutional examination paper -->
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-secondary" data-action="close-preview">Close Preview</button>
+            <button type="button" class="btn-primary" data-action="publish-exam">Proceed &amp; Publish Paper</button>
+        </div>
+    </div>
+</div>
+
+<!-- QUESTION BANK IMPORT MODAL -->
+<div id="bank-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card" style="max-width: 800px;">
+        <div class="modal-header">
+            <h3>Import from Faculty Question Bank</h3>
+            <button type="button" class="btn-icon-subtle" data-action="close-bank" style="font-size: 1.5rem; line-height: 1;" title="Close Modal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div style="display: flex; gap: 10px; margin-bottom: 1.25rem;">
+                <input type="text" id="bank-search-input" class="form-control" placeholder="Search questions by topic, statement keywords..." style="flex: 2;">
+                <select id="bank-subject-filter" class="form-control" style="flex: 1;">
+                    <option value="">All Subjects</option>
+                </select>
+            </div>
+            <div id="bank-questions-list" style="max-height: 55vh; overflow-y: auto; padding-right: 4px;">
+                <!-- Populated dynamically via fetch -->
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-secondary" data-action="close-bank">Done Importing</button>
+        </div>
+    </div>
+</div>
+
+<!-- Client-side builder script -->
+<script src="{{ url_for('static', filename='js/admin_exam_builder.js') }}"></script>
+{% endblock %}

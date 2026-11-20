@@ -1,0 +1,145 @@
+{% extends "admin/layout.html" %}
+{% set active_tab = "audit_logs" %}
+{% block heading %}System Audit Logs{% endblock %}
+{% block admin_content %}
+<div class="dashboard-content">
+    <div class="dashboard-header-banner">
+        <div class="header-meta">
+            <h2>Administrative Audit Logs</h2>
+            <p>Immutable forensic record of administrative actions: examination creation, modifications, cancellations, question updates, marks adjustments, result publications, and user account provisioning.</p>
+        </div>
+        <div class="header-actions">
+            <a href="{{ url_for('admin.export_audit_logs_csv', action=active_action, entity_type=active_entity_type, exam_id=active_exam_id or '', search=search) }}" class="btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Export CSV
+            </a>
+            <a href="{{ url_for('admin.dashboard') }}" class="btn-secondary">Back to Dashboard</a>
+        </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="dashboard-card" style="margin-bottom: 1.5rem; padding: 1.25rem;">
+        <form method="get" action="{{ url_for('admin.audit_logs_view') }}" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end;">
+            <div style="flex: 1; min-width: 170px;">
+                <label for="actionFilter" style="display: block; font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 0.25rem;">Action Type</label>
+                <select name="action" id="actionFilter" class="form-control" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px;">
+                    <option value="">All Administrative Actions</option>
+                    <option value="examination_creation" {% if active_action == 'examination_creation' %}selected{% endif %}>Examination Creation</option>
+                    <option value="examination_modification" {% if active_action == 'examination_modification' %}selected{% endif %}>Examination Modification</option>
+                    <option value="examination_cancellation" {% if active_action == 'examination_cancellation' %}selected{% endif %}>Examination Cancellation</option>
+                    <option value="question_changes" {% if active_action == 'question_changes' %}selected{% endif %}>Question Changes</option>
+                    <option value="marks_modification" {% if active_action == 'marks_modification' %}selected{% endif %}>Marks Modification</option>
+                    <option value="result_publication" {% if active_action == 'result_publication' %}selected{% endif %}>Result Publication</option>
+                    <option value="teacher_account_changes" {% if active_action == 'teacher_account_changes' %}selected{% endif %}>Teacher Account Changes</option>
+                </select>
+            </div>
+
+            <div style="flex: 1; min-width: 150px;">
+                <label for="entityFilter" style="display: block; font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 0.25rem;">Entity Type</label>
+                <select name="entity_type" id="entityFilter" class="form-control" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px;">
+                    <option value="">All Entities</option>
+                    <option value="exam" {% if active_entity_type == 'exam' %}selected{% endif %}>Examination</option>
+                    <option value="question" {% if active_entity_type == 'question' %}selected{% endif %}>Question</option>
+                    <option value="attempt" {% if active_entity_type == 'attempt' %}selected{% endif %}>Attempt</option>
+                    <option value="result" {% if active_entity_type == 'result' %}selected{% endif %}>Result</option>
+                    <option value="teacher" {% if active_entity_type == 'teacher' %}selected{% endif %}>Teacher Account</option>
+                    <option value="grading" {% if active_entity_type == 'grading' %}selected{% endif %}>Grading Policy</option>
+                </select>
+            </div>
+
+            <div style="flex: 1; min-width: 180px;">
+                <label for="searchQuery" style="display: block; font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 0.25rem;">Keyword / Details</label>
+                <input type="text" name="search" id="searchQuery" value="{{ search }}" placeholder="Search user, action, details..." class="form-control" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px;">
+            </div>
+
+            <div style="display: flex; gap: 0.5rem;">
+                <button type="submit" class="btn-primary" style="padding: 0.5rem 1rem;">Filter</button>
+                {% if active_action or active_entity_type or active_exam_id or search %}
+                <a href="{{ url_for('admin.audit_logs_view') }}" class="btn-secondary" style="padding: 0.5rem 1rem;">Reset</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Audit Logs Table -->
+    <div class="dashboard-card">
+        <div class="card-header-bar">
+            <div class="card-title-group">
+                <h3>Recorded Events ({{ logs|length }})</h3>
+                <p>Showing chronological administrative audit trails.</p>
+            </div>
+            <span class="status-pill pill-primary">{{ logs|length }} entries</span>
+        </div>
+
+        <div class="card-body-panel" style="padding: 0;">
+            {% if logs and logs|length > 0 %}
+            <div class="table-scroll-shell">
+                <table class="data-table" style="width: 100%;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #e2e8f0; background: #f8fafc;">
+                            <th style="padding: 0.875rem 1rem; width: 140px;">Timestamp</th>
+                            <th style="padding: 0.875rem 1rem; width: 180px;">Action</th>
+                            <th style="padding: 0.875rem 1rem; width: 180px;">Operator / Role</th>
+                            <th style="padding: 0.875rem 1rem; width: 140px;">Entity</th>
+                            <th style="padding: 0.875rem 1rem;">Details &amp; Audit Context</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 0.875rem 1rem; font-size: 0.8rem; color: #64748b; white-space: nowrap;">
+                                {{ log.timestamp }}
+                            </td>
+                            <td style="padding: 0.875rem 1rem;">
+                                <span class="status-pill" style="font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.6rem; border-radius: 9999px; display: inline-block;
+                                    {% if log.action in ['examination_creation', 'CREATED'] %}background: #d1fae5; color: #065f46;
+                                    {% elif log.action in ['examination_modification', 'EDITED', 'STATUS_CHANGE'] %}background: #e0f2fe; color: #0369a1;
+                                    {% elif log.action in ['examination_cancellation', 'CANCELLED'] %}background: #fee2e2; color: #b91c1c;
+                                    {% elif log.action in ['marks_modification', 'result_publication'] %}background: #f3e8ff; color: #6b21a8;
+                                    {% elif log.action in ['teacher_account_changes'] %}background: #fef3c7; color: #92400e;
+                                    {% else %}background: #f1f5f9; color: #475569;{% endif %}">
+                                    {{ log.action|replace('_', ' ')|title }}
+                                </span>
+                            </td>
+                            <td style="padding: 0.875rem 1rem;">
+                                <div style="font-weight: 600; color: #1e293b; font-size: 0.9rem;">
+                                    {{ log.user_name or 'System Administrator' }}
+                                </div>
+                                <div style="font-size: 0.8rem; color: #64748b;">
+                                    Role: {{ log.user_role or 'Super Admin' }} {% if log.admin_user_id %}(#{{ log.admin_user_id }}){% endif %}
+                                </div>
+                            </td>
+                            <td style="padding: 0.875rem 1rem;">
+                                <div style="font-size: 0.85rem; font-weight: 600; color: #334155; text-transform: capitalize;">
+                                    {{ log.entity_type or 'Exam' }}
+                                </div>
+                                {% if log.entity_id %}
+                                <div style="font-size: 0.8rem; color: #64748b;">
+                                    ID: #{{ log.entity_id }}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 0.875rem 1rem; font-size: 0.875rem; color: #334155; line-height: 1.5;">
+                                {{ log.details }}
+                                {% if log.exam_id and log.exam_id != 0 %}
+                                <span style="display: block; font-size: 0.75rem; color: #94a3b8; margin-top: 0.2rem;">
+                                    Associated Exam ID: #{{ log.exam_id }}
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div style="padding: 3.5rem 1.5rem; text-align: center; color: #64748b;">
+                <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">📋</div>
+                <h4 style="color: #1e293b; margin-bottom: 0.25rem;">No Audit Logs Found</h4>
+                <p style="font-size: 0.9rem;">No recorded events match the selected filters.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
